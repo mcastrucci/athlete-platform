@@ -1,14 +1,20 @@
 # athlete-platform
 
-Producto para ayudar a atletas que ya entrenan a organizar su desarrollo: objetivos claros, volumen, periodización, progresión y decisiones explicadas.
+A product to help athletes who already train organize their development: clear goals, volume, periodization, progression, and explained decisions.
 
-Nombre interno de trabajo. La marca comercial está pendiente.
+Internal working name. The commercial brand is still undecided.
 
-El repositorio reúne definición de producto, decisiones y seguimiento de implementación. El piloto se está definiendo; todavía no hay una aplicación implementada.
+This repository contains product definition, decisions, and implementation tracking. The pilot is being defined; no application has been implemented yet.
 
-## Documentación
+## Language convention
 
-- [PRD del piloto](docs/product/pilot-prd.md): usuario, alcance, recorrido, criterios de aceptación y evaluación.
-- Próximo paso: revisar las decisiones pendientes del PRD y preparar `docs/engineering/pilot-plan.md`.
+All repository documentation, code, identifiers, comments, commit messages, and pull request titles and descriptions must be in English. See [AGENTS.md](AGENTS.md) for contributor instructions.
 
-El avance se sigue con checkboxes y enlaces a PRs dentro de estos documentos.
+User-facing languages are a separate product decision. Localized content belongs in explicitly identified localization resources; internal documentation and domain identifiers remain in English.
+
+## Documentation
+
+- [Pilot PRD](docs/product/pilot-prd.md): user, scope, journey, acceptance criteria, and evaluation.
+- Next step: review the PRD's open decisions and prepare `docs/engineering/pilot-plan.md`.
+
+Progress is tracked with checkboxes and PR links in these documents.

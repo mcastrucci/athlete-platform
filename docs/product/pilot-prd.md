@@ -1,200 +1,202 @@
-# PRD del piloto: la búsqueda de consistencia
+# Pilot PRD: the pursuit of consistency
 
-- Estado: borrador para revisión; alcance propuesto, no compromiso de implementación.
-- Fecha: 2026-10-27.
-- Responsable de producto: Maximiliano Castrucci.
-- Nombre interno: athlete-platform. La marca no bloquea el desarrollo.
-- Antecedente: [visión de producto en athlete, PR #10](https://github.com/mcastrucci/athlete/pull/10). Este documento es la referencia de alcance del nuevo producto; los cambios posteriores se revisan aquí.
+- Status: draft for review; proposed scope, not an implementation commitment.
+- Date: 2026-10-27.
+- Product owner: Maximiliano Castrucci.
+- Internal name: athlete-platform. Branding does not block development.
+- Background: [product vision in athlete, PR #10](https://github.com/mcastrucci/athlete/pull/10). This document is the scope reference for the new product; subsequent changes are reviewed here.
 
-## 1. Propósito
+## 1. Purpose
 
-Ayudar al atleta a sostener un proceso coherente de desarrollo individual. La consistencia conecta objetivos, bloques, semanas, sesiones y respuesta del atleta.
+Help athletes sustain a coherent process of individual development. Consistency connects goals, blocks, weeks, sessions, and athlete response.
 
-> Entrená con un plan de desarrollo: objetivos claros, volumen organizado y progresión que se revisa con tus resultados.
+> Train with a development plan: clear goals, organized volume, and progression reviewed against your results.
 
-La unidad de producto es el bloque de desarrollo: prioridades, dosis, progresión, evaluaciones y criterios de revisión. Cada sesión ejecuta una intención dentro de ese bloque.
+The core product unit is the development block: priorities, training dose, progression, assessments, and review criteria. Each session serves an intention within that block.
 
-La hipótesis es que coordinar el entrenamiento completo y explicar los ajustes aporta valor a un atleta que ya recibe programación. No asumimos que estas capacidades sean exclusivas ni que una programación de box carezca de estructura.
+Our hypothesis is that coordinating the athlete's complete training and explaining adjustments provides value to someone who already receives programming. We do not assume these capabilities are unique or that a gym's programming lacks structure.
 
-## 2. Usuario y problema
+## 2. User and problem
 
-Atleta avanzado o comprometido que ya entrena CrossFit y puede combinar clases del box, Oly, fuerza, skills y accesorios. Tiene objetivos concretos, pero sus fuentes de programación no necesariamente conocen el conjunto de su entrenamiento.
+An advanced or committed athlete who already trains CrossFit and may combine gym classes, Olympic weightlifting, strength, skills, and accessory work. They have concrete goals, but their programming sources may not account for their complete training.
 
-Necesita saber qué está desarrollando, si la distribución del trabajo acompaña sus prioridades y qué conviene mantener, agregar, reducir, sustituir o mover.
+They need to understand what they are developing, whether the distribution of work supports their priorities, and what to keep, add, reduce, substitute, or reschedule.
 
-La experiencia real difiere del plan por asistencia, escalados, cargas utilizadas, sesiones adicionales y respuesta individual. El producto debe evaluar ese recorrido.
+Actual experience differs from the plan because of attendance, scaling, loads used, additional sessions, and individual response. The product must assess that experience.
 
-El comprador y usuario inicial es el atleta. La gestión de coaches, alumnos y boxes es una expansión posible. El caso personal de Max es una referencia inicial, no una plantilla universal ni la única evidencia de utilidad.
+The initial buyer and user is the athlete. Managing coaches, athletes, and gyms is a possible expansion. Max's personal case is an initial reference, not a universal template or the only evidence of usefulness.
 
-## 3. Hipótesis y resultado del piloto
+## 3. Hypothesis and pilot outcome
 
-Hipótesis principal: un atleta con programación existente entiende mejor su entrenamiento, aplica ajustes razonados y vuelve a revisar su evolución semanalmente.
+Main hypothesis: an athlete with existing programming understands their training better, applies reasoned adjustments, and returns to review progress each week.
 
-El piloto debe completar este circuito:
+The pilot must complete this loop:
 
-1. Perfil y objetivos.
-2. Carga y confirmación de la programación.
-3. Evaluación contra el contexto del atleta.
-4. Propuesta de ajustes y aceptación explícita.
-5. Registro de ejecución y respuesta.
-6. Revisión semanal que informa la siguiente semana.
+1. Profile and goals.
+2. Programming upload and confirmation.
+3. Assessment against the athlete's context.
+4. Proposed adjustments and explicit acceptance.
+5. Execution and response logging.
+6. Weekly review that informs the following week.
 
-La mejora de marcas deportivas es exploratoria. Un piloto pequeño y corto no demuestra eficacia fisiológica ni superioridad frente a otro método.
+Improvements in athletic benchmarks are exploratory. A small, short pilot does not establish physiological efficacy or superiority over another method.
 
-## 4. Alcance propuesto
+## 4. Proposed scope
 
-| Área | Piloto | Después del piloto |
+| Area | Pilot | After the pilot |
 | --- | --- | --- |
-| Usuario | Atleta adulto que ya entrena; español | Principiantes y gestión de boxes/coaches |
-| Journey | CrossFit con Oly, fuerza, acondicionamiento y accesorios existentes | Hybrid/HYROX con evaluaciones y reglas propias |
-| Planificación | Evaluar y ajustar una programación existente dentro de un bloque explícito | Generar programas completos desde cero |
-| Skills | Registrar nivel, objetivo y práctica existente; detectar incompatibilidades | Biblioteca de evaluaciones y progresiones adaptativas de skills |
-| Entrada | Texto, XLSX, PDF y fotos JPG/PNG; corrección manual | Más formatos e integraciones automáticas |
-| Seguimiento | Sesiones, ejecución parcial, respuesta y revisión semanal | Wearables y adaptación continua |
-| Experiencia | Flujo usable desde el móvil; formato de interfaz a definir | Apps nativas y funciones sociales |
+| User | Adult athlete who already trains; Spanish-language experience | Beginners and gym/coach management |
+| Journey | CrossFit with existing Olympic weightlifting, strength, conditioning, and accessory work | Hybrid/HYROX with its own assessments and rules |
+| Planning | Assess and adjust existing programming within an explicit block | Generate complete programs from scratch |
+| Skills | Record level, goal, and existing practice; identify incompatibilities | Library of assessments and adaptive skill progressions |
+| Input | Text, XLSX, PDF, and JPG/PNG photos; manual correction | Additional formats and automatic integrations |
+| Tracking | Sessions, partial execution, response, and weekly review | Wearables and continuous adaptation |
+| Experience | Usable from a phone; interface format to be decided | Native apps and social features |
 
-El bloque inicial puede ser propuesto por el producto o provenir del coach. Si se desconoce la intención del programa externo, se solicita o se marca como desconocida.
+The initial block may be proposed by the product or supplied by the coach. If the external program's intention is unknown, request it or mark it as unknown.
 
-Se propone trabajar con las últimas dos semanas, el plan de la próxima semana cuando esté disponible y un horizonte de bloque de cuatro semanas. Dos semanas permiten describir lo observado; no bastan para afirmar la calidad de toda una periodización.
+We propose using the previous two weeks, the following week's plan when available, and a four-week block horizon. Two weeks support describing what was observed; they do not establish the quality of an entire periodization approach.
 
-No es necesario conocer las cuatro semanas futuras del box: se conserva la intención del bloque y se ajusta con la nueva información, sin inventar sesiones.
+The gym's next four weeks do not need to be known: preserve the block's intention and adjust as new information arrives, without inventing sessions.
 
-## 5. Recorrido y requisitos
+Repository and code language is English. The proposed Spanish-language pilot experience is a separate product decision; localized content must remain separate from domain identifiers and internal documentation.
 
-### P1. Perfil, prioridades y restricciones
+## 5. Journey and requirements
 
-Capturar experiencia, objetivos ordenados por prioridad, métricas iniciales con fecha, disponibilidad real, equipamiento, compromisos fijos y flexibles, y restricciones reportadas.
+### P1. Profile, priorities, and constraints
 
-Registrar los skills relevantes diferenciando ejecución aislada, consistencia, series e integración en metcon; no exigir una evaluación exhaustiva para empezar.
+Capture experience, goals ordered by priority, dated baseline metrics, actual availability, equipment, fixed and flexible commitments, and reported constraints.
 
-El atleta identifica qué programación quiere conservar y qué permite modificar. Un objetivo sin benchmark puede ser provisional y debe explicitar qué evaluación falta.
+Record relevant skills, distinguishing isolated execution, consistency, sets, and integration into a metcon; do not require an exhaustive assessment to get started.
 
-**Aceptación:** dos atletas con distinta disponibilidad y compromisos pueden usar el flujo sin heredar datos ni reglas personales entre sí; los campos faltantes permanecen visibles.
+The athlete identifies which programming to preserve and what may change. A goal without a benchmark may be provisional and must state which assessment is missing.
 
-### P2. Carga, interpretación y confirmación
+**Acceptance:** two athletes with different availability and commitments can use the flow without inheriting each other's data or personal rules; missing fields remain visible.
 
-Aceptar texto pegado, XLSX, PDF con texto o escaneado y fotos legibles de una hoja o pizarra. Conservar la fuente y presentar una interpretación editable antes de evaluarla.
+### P2. Upload, interpretation, and confirmation
 
-Extraer fechas, sesiones y bloques; ejercicios/variantes, series, repeticiones, carga, intensidad, descansos y formato del metcon cuando estén presentes. Distinguir unidades, porcentajes y referencias de carga.
+Accept pasted text, XLSX, text-based or scanned PDFs, and legible photos of a sheet or whiteboard. Preserve the source and present an editable interpretation before assessment.
 
-No completar como hechos los campos ausentes. Ante texto ambiguo, imágenes ilegibles, ejercicios desconocidos o formatos no soportados, señalar el problema y permitir corrección manual o nueva carga. Mostrar las limitaciones de tamaño y páginas antes de subir; sus valores se definirán en el plan técnico.
+Extract dates, sessions, and blocks; exercises/variations, sets, repetitions, load, intensity, rest periods, and metcon format when present. Distinguish units, percentages, and load references.
 
-No duplicar sesiones silenciosamente al volver a cargar un archivo. Cambiar un dato confirmado deja desactualizada la evaluación afectada hasta recalcularla.
+Do not fill missing fields as facts. Flag ambiguous text, illegible images, unknown exercises, or unsupported formats, and allow manual correction or another upload. Show file size and page limits before upload; their values will be defined in the technical plan.
 
-**Aceptación:** la evaluación usa una versión confirmada por el atleta; cada dato relevante permite localizar su fuente o corrección manual. Hay ejemplos de aceptación para cada formato, incluida una foto ambigua y una recarga.
+Do not silently duplicate sessions when a file is uploaded again. Changing confirmed data marks the affected assessment as outdated until recalculated.
 
-### P3. Evaluación del entrenamiento completo
+**Acceptance:** assessments use an athlete-confirmed version; each relevant datum can be traced to its source or manual correction. Acceptance examples cover every format, including an ambiguous photo and a repeated upload.
 
-Comparar lo observado con objetivos, disponibilidad, restricciones y contexto del bloque. Incluir:
+### P3. Assessment of complete training
 
-- Distribución de trabajo por capacidades y patrones relevantes.
-- Dosis por ejercicio y exposición repetida entre sesiones, incluyendo trabajo adicional.
-- Proximidad de estímulos potencialmente incompatibles y compromisos fijos.
-- Oportunidades de desarrollo, mantenimiento y evaluación.
-- Datos faltantes y límites de la interpretación.
+Compare observations with goals, availability, constraints, and block context. Include:
 
-Separar volumen planificado y realizado. Conservar unidades originales: repeticiones, kilos, tiempo, distancia o calorías no son intercambiables. Si se usa una equivalencia, identificar modelo, supuestos y límites; no presentarla como medida directa de recuperación.
+- Distribution of work across relevant capacities and movement patterns.
+- Dose per exercise and repeated exposure across sessions, including additional work.
+- Proximity of potentially incompatible stimuli and fixed commitments.
+- Opportunities for development, maintenance, and assessment.
+- Missing data and interpretation limits.
 
-Evitar una nota global arbitraria de “bueno/malo”. Los hallazgos deben ser específicos, priorizados y verificables. No atribuir una intención de periodización que no figure en la fuente ni se haya confirmado.
+Separate planned and completed volume. Preserve original units: repetitions, kilograms, time, distance, and calories are not interchangeable. If an equivalence is used, identify the model, assumptions, and limits; do not present it as a direct measure of recovery.
 
-**Aceptación:** el informe distingue datos, estimaciones e hipótesis; un dato desconocido no se convierte en cero ni en ausencia de problema.
+Avoid an arbitrary overall good/bad score. Findings must be specific, prioritized, and verifiable. Do not attribute a periodization intention that is absent from the source and has not been confirmed.
 
-### P4. Ajustes y explicación por ejercicio
+**Acceptance:** the report distinguishes data, estimates, and hypotheses; unknown data do not become zero or evidence that no problem exists.
 
-Proponer una versión modificada comparable con el plan original. Cada cambio incluye dosis, ubicación, objetivo y efecto sobre el tiempo y la carga total. Respetar los compromisos declarados inmodificables; si no existe una propuesta compatible, explicar el conflicto y pedir una decisión.
+### P4. Adjustments and exercise explanations
 
-Para cada ejercicio prescrito o evaluado debe poder consultarse un “por qué” breve, con detalle adicional:
+Propose a modified version that can be compared with the original plan. Each change includes dose, placement, goal, and its effect on time and total training load. Respect commitments declared immutable; if no compatible proposal exists, explain the conflict and request a decision.
 
-- Aporte al objetivo: desarrollo, mantenimiento, transferencia o práctica técnica.
-- Dosis y momento: intensidad, frecuencia, progresión y ubicación.
-- Costo y compatibilidad con el resto del entrenamiento.
-- Restricciones, información faltante y alternativas.
-- Qué resultado justificaría progresar, mantener, reducir o reemplazar.
+A brief explanation must be available for each prescribed or assessed exercise, with additional detail:
 
-Las explicaciones deben corresponder con los datos, reglas y cálculos realmente aplicados. Distinguir evidencia disponible, criterio de coaching e hipótesis; no inventar referencias ni precisión.
+- Contribution to the goal: development, maintenance, transfer, or technical practice.
+- Dose and timing: intensity, frequency, progression, and placement.
+- Cost and compatibility with the rest of the training.
+- Constraints, missing information, and alternatives.
+- Which result would justify progressing, maintaining, reducing, or replacing it.
 
-El atleta acepta, modifica o rechaza la propuesta. Conservar el original, las alternativas y la versión aceptada. Ningún ajuste cambia silenciosamente el plan activo.
+Explanations must match the data, rules, and calculations actually applied. Distinguish available evidence, coaching judgment, and hypotheses; do not fabricate references or precision.
 
-**Aceptación:** cada modificación es rastreable y puede rechazarse; las restricciones explícitas se cumplen o bloquean la propuesta. La explicación cambia si cambian el contexto o la dosis.
+The athlete accepts, modifies, or rejects the proposal. Preserve the original, alternatives, and accepted version. No adjustment silently changes the active plan.
 
-### P5. Ejecución y respuesta
+**Acceptance:** every modification is traceable and can be rejected; explicit constraints are met or block the proposal. Explanations change when context or dose changes.
 
-Permitir registrar una sesión completa, parcial, modificada o no realizada, con cargas/repeticiones/resultados cuando se conozcan. Solicitar un check-in breve de esfuerzo, sueño, energía, molestias y notas, sin obligar a completar todos los campos.
+### P5. Execution and response
 
-Distinguir “sin registrar”, “no realizado” y “realizado con dosis desconocida”. Mostrar fecha y antigüedad de los datos usados para decidir; no transformar una respuesta de ayer en el estado de hoy.
+Allow logging a complete, partial, modified, or skipped session, with loads/repetitions/results when known. Request a brief check-in covering effort, sleep, energy, discomfort, and notes, without requiring every field.
 
-**Aceptación:** una sesión parcial no se computa como completa; cero y desconocido generan resultados diferentes; las correcciones actualizan los informes afectados sin borrar la trazabilidad.
+Distinguish not logged, not performed, and performed with unknown dose. Show the date and age of data used for decisions; do not turn yesterday's response into today's state.
 
-### P6. Revisión semanal y continuidad del bloque
+**Acceptance:** partial sessions are not counted as complete; zero and unknown produce different results; corrections update affected reports without erasing traceability.
 
-Comparar intención, ejecución y respuesta; mostrar qué cambió, qué quedó pendiente y qué conviene revisar. Proponer la próxima semana con la nueva programación disponible.
+### P6. Weekly review and block continuity
 
-Mantener prioridades, criterios de progresión y evaluación del bloque entre semanas. No rehacerlo por variaciones aisladas sin justificarlo ni añadir trabajo para compensar automáticamente todo lo no realizado.
+Compare intention, execution, and response; show what changed, what remains pending, and what deserves review. Propose the following week using newly available programming.
 
-**Aceptación:** la revisión puede explicar qué decisión se mantiene o cambia y qué observación la respalda. El atleta confirma la siguiente versión antes de activarla.
+Preserve priorities, progression criteria, and block assessment across weeks. Do not rebuild the block because of isolated variations without justification or automatically add work to compensate for everything missed.
 
-## 6. Límites de la recomendación y confianza
+**Acceptance:** the review explains which decision is maintained or changed and which observation supports it. The athlete confirms the next version before activation.
 
-El producto informa y ayuda a planificar entrenamiento; no diagnostica lesiones ni prescribe rehabilitación. Respeta las restricciones reportadas y puede pedir revisión humana cuando faltan datos o una propuesta no resulta compatible.
+## 6. Recommendation limits and trust
 
-Los umbrales personales del repositorio athlete no se vuelven límites universales. Las reglas deportivas y sus explicaciones requieren revisión de alguien con experiencia profesional pertinente antes del uso con participantes externos.
+The product informs and supports training planning; it does not diagnose injuries or prescribe rehabilitation. It respects reported constraints and may request human review when data are missing or a proposal is incompatible.
 
-Las cargas estimadas no certifican que alguien esté recuperado. Una recomendación debe poder declarar “información insuficiente”.
+Personal thresholds from the athlete repository do not become universal limits. Training rules and their explanations require review by someone with relevant professional experience before use with external participants.
 
-El atleta conserva control sobre sus datos: acceso individual, exportación y eliminación desde el piloto, aunque la operación inicialmente sea asistida. Los archivos personales, fotos y registros no se guardan como fixtures ni se publican en GitHub. No se usan para entrenamiento de modelos sin un consentimiento separado.
+Estimated loads do not certify that someone has recovered. A recommendation must be able to state that information is insufficient.
 
-## 7. Cómo evaluaremos el piloto
+Athletes retain control over their data: individual access, export, and deletion are available from the pilot, even if initially assisted. Personal files, photos, and logs are not stored as fixtures or published on GitHub. They are not used for model training without separate consent.
 
-Propuesta para acordar: cinco atletas, incluyendo a Max y al menos tres personas con una combinación de entrenamiento diferente, durante cuatro semanas posteriores al onboarding. Seguimiento asistido y revisión experta de las propuestas; no prometer autonomía completa.
+## 7. Pilot evaluation
 
-Registrar numeradores, denominadores y motivos de abandono. Separar ayuda manual del producto para no atribuirle capacidades que todavía hace una persona.
+Proposal to agree on: five athletes, including Max and at least three people with a different training mix, for four weeks after onboarding. Assisted follow-up and expert review of proposals; do not promise full autonomy.
 
-| Señal | Definición | Umbral propuesto |
+Record numerators, denominators, and dropout reasons. Separate manual assistance from product functionality to avoid attributing human capabilities to the product.
+
+| Signal | Definition | Proposed threshold |
 | --- | --- | --- |
-| Activación | Perfil + programación confirmada + primera evaluación consultada | Al menos 4 de 5 |
-| Valor aplicado | Aplica al menos un ajuste y explica para qué le sirve | Al menos 3 de 5 |
-| Continuidad | Completa al menos 3 revisiones semanales de 4 | Al menos 3 de 5 |
-| Comprensión | Puede explicar el motivo de dos decisiones de su plan en una entrevista breve | Al menos 4 de 5 |
-| Calidad | Revisión de todos los planes propuestos y muestra de explicaciones por el revisor experto | Sin conflictos críticos de restricciones pendientes al entregar un plan |
+| Activation | Profile + confirmed programming + first assessment viewed | At least 4 of 5 |
+| Applied value | Applies at least one adjustment and explains its purpose | At least 3 of 5 |
+| Continuity | Completes at least 3 of 4 weekly reviews | At least 3 of 5 |
+| Understanding | Can explain the reason for two plan decisions in a brief interview | At least 4 of 5 |
+| Quality | Expert reviews every proposed plan and a sample of explanations | No unresolved critical constraint conflicts when delivering a plan |
 
-Medir también tiempo de onboarding, correcciones por formato, minutos de asistencia por atleta/semana, recomendaciones rechazadas y motivos. Son señales de costo operativo y fricción; no sustituirlas por cantidad de sesiones registradas.
+Also measure onboarding time, corrections by format, assistance minutes per athlete/week, rejected recommendations, and reasons. These indicate operating cost and friction; session logging counts are not substitutes.
 
-Cumplir los umbrales justifica una siguiente iteración, no prueba ajuste producto-mercado. Si falla la utilidad, revisar propuesta y alcance; si falla la calidad de interpretación o prescripción, corregir antes de ampliar el grupo.
+Meeting thresholds supports another iteration, not proof of product-market fit. If usefulness fails, revisit the proposition and scope; if interpretation or prescription quality fails, fix it before expanding the cohort.
 
-## 8. Fuera de alcance
+## 8. Out of scope
 
-- Programación desde cero para personas que no entrenan.
-- Un optimizador universal que garantice el mejor plan o resultados.
-- Gestión comercial de boxes, permisos de coach y programación grupal.
-- Journey Hybrid/HYROX completo y progresiones automáticas de skills.
-- Diagnóstico, rehabilitación, nutrición y recomendaciones de suplementos.
-- Wearables, sincronización con otras apps, videoanálisis y redes sociales.
-- Cobros, planes comerciales y apps nativas.
+- Programming from scratch for people who do not train.
+- A universal optimizer that guarantees the best plan or results.
+- Gym business management, coach permissions, and group programming.
+- A complete Hybrid/HYROX journey and automatic skill progressions.
+- Diagnosis, rehabilitation, nutrition, and supplement recommendations.
+- Wearables, app synchronization, video analysis, and social features.
+- Payments, commercial plans, and native apps.
 
-Estos puntos no se consideran implementados por reservarles espacio en el modelo futuro.
+Reserving space for these in a future model does not mean they are implemented.
 
-## 9. Decisiones pendientes antes del plan técnico
+## 9. Decisions before the technical plan
 
-| ID | Decisión | Propuesta inicial |
+| ID | Decision | Initial proposal |
 | --- | --- | --- |
-| D1 | Cohorte, duración y reclutamiento | Cinco atletas, cuatro semanas; validar acceso a participantes |
-| D2 | Alcance de prescripción | Ajustar planes existentes; generación completa y progresiones nuevas de skills después |
-| D3 | Operación y revisión deportiva | Piloto asistido; identificar revisor y disponibilidad antes de incorporar terceros |
-| D4 | Interfaz y fricción tolerable | Uso móvil; comparar web propia y una experiencia asistida al planificar |
-| D5 | Métricas y umbrales | Usar sección 7 como hipótesis; acordar antes de medir |
-| D6 | Capacidades de importación | Cuatro entradas de P2; definir límites y corpus representativo |
-| D7 | Datos y proveedores | Acordar almacenamiento, acceso, retención, eliminación y tratamiento por proveedores |
+| D1 | Cohort, duration, and recruitment | Five athletes, four weeks; validate access to participants |
+| D2 | Prescription scope | Adjust existing plans; complete generation and new skill progressions later |
+| D3 | Operations and training review | Assisted pilot; identify reviewer and availability before onboarding third parties |
+| D4 | Interface and acceptable friction | Mobile use; compare a dedicated web experience with an assisted experience during planning |
+| D5 | Metrics and thresholds | Use section 7 as hypotheses; agree before measuring |
+| D6 | Import capabilities | Four input types in P2; define limits and a representative corpus |
+| D7 | Data and providers | Agree on storage, access, retention, deletion, and provider processing |
 
-El nombre comercial, el modelo de monetización y la gestión de boxes no bloquean el piloto.
+The commercial name, monetization model, and gym management do not block the pilot.
 
-## 10. Seguimiento en el repositorio
+## 10. Repository tracking
 
-Este PRD guarda el alcance y los criterios de aceptación. El futuro `docs/engineering/pilot-plan.md` tendrá etapas con checkboxes, validación y enlaces a PRs; todavía no se define arquitectura ni stack.
+This PRD holds scope and acceptance criteria. The future `docs/engineering/pilot-plan.md` will contain stages with checkboxes, validation, and PR links; architecture and stack are not defined yet.
 
-- [x] Registrar el primer borrador del PRD.
-- [ ] Revisar alcance y resolver D1–D7 con decisiones fechadas.
-- [ ] Preparar el plan técnico y decidir qué reutilizar del motor existente.
-- [ ] Verificar los criterios P1–P6 y la revisión experta antes de incorporar terceros.
-- [ ] Ejecutar el piloto y registrar resultados contra las hipótesis.
+- [x] Record the first PRD draft.
+- [ ] Review scope and resolve D1–D7 with dated decisions.
+- [ ] Prepare the technical plan and decide what to reuse from the existing engine.
+- [ ] Verify P1–P6 and expert review before onboarding third parties.
+- [ ] Run the pilot and record results against the hypotheses.
 
-Los cambios de alcance se hacen por PR. Cada etapa técnica debe poder vincularse con un requisito de este documento y una comprobación observable. No se trasladan datos personales de athlete al producto; cualquier reutilización del motor se define en el plan técnico.
+Scope changes go through PRs. Each technical stage must link to a requirement in this document and an observable check. Personal data from athlete are not transferred into the product; any engine reuse is defined in the technical plan.
