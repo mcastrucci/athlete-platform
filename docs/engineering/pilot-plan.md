@@ -209,7 +209,25 @@ Track job age, attempts, failures, extraction corrections, provider latency/cost
 
 ## 9. Implementation stages
 
-Each stage gets one or more reviewable PRs. Replace “Pending” with links and record actual completion evidence.
+GitHub Issues are the source of truth for task status and dependencies. Each implementation PR links its issue and records validation evidence; use closing keywords only when all acceptance criteria are met. This document retains architecture, stage-level scope, and links, without duplicating issue checklists.
+
+### First vertical slice
+
+The first coding task is [#4](https://github.com/mcastrucci/athlete-platform/issues/4). Decision work in #3 can proceed alongside it.
+
+| Issue | Verifiable outcome | Stage coverage |
+| --- | --- | --- |
+| [#3](https://github.com/mcastrucci/athlete-platform/issues/3) | Record initial authentication and extraction-model decisions | Part of S0 |
+| [#4](https://github.com/mcastrucci/athlete-platform/issues/4) | Start the local service, migrate PostgreSQL, and pass CI | Foundation portion of S1 |
+| [#5](https://github.com/mcastrucci/athlete-platform/issues/5) | Own and update an isolated, versioned athlete profile | Identity/context portions of S1–S2 |
+| [#6](https://github.com/mcastrucci/athlete-platform/issues/6) | Submit text, revise its interpretation, and confirm sessions without duplication | Text-only subset of S2–S4 |
+| [#7](https://github.com/mcastrucci/athlete-platform/issues/7) | Evaluate confirmed training with version-linked findings | Evaluation subset of S2/S4 |
+
+These issues do not complete their entire parent stages. Other formats, frontend, full proposal workflows, weekly reviews, deployment, and external-pilot readiness remain in the stage plan below. Create further actionable issues as those stages approach, rather than treating these five as the complete pilot backlog. If a task requires multiple reviewable PRs, split out linked prerequisites before implementation.
+
+### Stage reference
+
+Each stage gets one or more reviewable PRs. Replace “Pending” with implementation PR links and completion evidence; task status remains in Issues.
 
 | Stage | Scope and PRD mapping | Required validation | PR |
 | --- | --- | --- | --- |
@@ -225,10 +243,9 @@ Each stage gets one or more reviewable PRs. Replace “Pending” with links and
 - [x] Record the proposed technical plan in [PR #2](https://github.com/mcastrucci/athlete-platform/pull/2).
 - [x] Record the owner's 2026-10-27 Cloud Run + Neon hosting decision; remaining S0 choices are still open.
 - [ ] Resolve S0 decisions.
-- [ ] Complete S1–S3.
-- [ ] Complete S4–S6.
-- [ ] Complete S7 before inviting external participants.
 - [ ] Run the pilot and compare results with the PRD hypotheses.
+
+Implementation task status is tracked in the linked issues. S7 remains a required gate before inviting external participants.
 
 Stages express dependencies, not delivery dates. The first useful vertical slice is one synthetic athlete importing text, confirming a session, and receiving a traceable evaluation; expand formats and proposal workflows from there.
 
