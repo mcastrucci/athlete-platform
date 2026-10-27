@@ -41,6 +41,7 @@ jobs:
       - run: uv run --locked ruff check .
       - run: uv run --locked ruff format --check .
       - run: uv run --locked mypy
+      - run: docker compose config --quiet
       - name: Migrate a fresh database and check for schema drift
         run: |
           uv run --locked alembic upgrade head

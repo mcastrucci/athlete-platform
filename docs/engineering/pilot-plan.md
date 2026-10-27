@@ -232,7 +232,7 @@ Each stage gets one or more reviewable PRs. Replace “Pending” with implement
 | Stage | Scope and PRD mapping | Required validation | PR |
 | --- | --- | --- | --- |
 | S0 | Record Cloud Run + Neon decision; close remaining choices: storage, auth/models, client, reviewer/operations, upload limits and budgets; D1–D7 | Dated decision record; distinguish technical approval from recruitment and expert availability | Pending |
-| S1 | Project foundation, API/worker entry points, PostgreSQL, migrations, identity/scope; P1 | Fresh database migration; two-user isolation including cross-athlete references; local startup; explicit RLS decision | Pending |
+| S1 | Project foundation, API/worker entry points, PostgreSQL, migrations, identity/scope; P1 | Fresh database migration; two-user isolation including cross-athlete references; local startup; explicit RLS decision | Foundation: [PR #9](https://github.com/mcastrucci/athlete-platform/pull/9); identity remains in issue #5 |
 | S2 | Typed training model, profile/context, canonical revisions, engine extraction; P1/P3 | Synthetic parity cases and transaction rollback; unknown vs zero; timezone cases | Pending |
 | S3 | Sources, object storage adapter, durable queue and imports; P2 | Every input format; corrupt/ambiguous files; parser isolation and resource limits; duplicate request; missed dispatch, lease recovery, stale worker fencing and quota races | Pending |
 | S4 | Corrections, confirmation, evaluation and proposal lifecycle; P2–P4 | Idempotent confirmation; input manifests; hard constraints; stale output and concurrent acceptance rejection | Pending |
