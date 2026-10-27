@@ -1,6 +1,6 @@
 # Pilot technical plan
 
-- Status: proposed implementation plan; no application code has been implemented.
+- Status: implementation started; the service foundation is proposed in PR #9. Training workflows remain unimplemented.
 - Date: 2026-10-27.
 - Product scope: [Pilot PRD](../product/pilot-prd.md).
 - Decisions confirmed by the product owner on 2026-10-27: Python, FastAPI, PostgreSQL, SQLAlchemy, Alembic, private file storage, and durable background processing without graph orchestration.
