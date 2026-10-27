@@ -15,6 +15,7 @@ User-facing languages are a separate product decision. Localized content belongs
 ## Documentation
 
 - [Pilot PRD](docs/product/pilot-prd.md): user, scope, journey, acceptance criteria, and evaluation.
-- Next step: review the PRD's open decisions and prepare `docs/engineering/pilot-plan.md`.
+- [Pilot technical plan](docs/engineering/pilot-plan.md): architecture, data lifecycle, engine reuse, implementation stages, and validation.
+- Next step: resolve the technical plan's S0 decisions and implement the foundation.
 
 Progress is tracked with checkboxes and PR links in these documents.
