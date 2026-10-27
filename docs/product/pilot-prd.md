@@ -191,7 +191,7 @@ The commercial name, monetization model, and gym management do not block the pil
 
 ## 10. Repository tracking
 
-This PRD holds scope and acceptance criteria. The future `docs/engineering/pilot-plan.md` will contain stages with checkboxes, validation, and PR links; architecture and stack are not defined yet.
+This PRD holds scope and acceptance criteria. The [pilot technical plan](../engineering/pilot-plan.md) records the agreed technical direction, proposed architecture, implementation stages, validation, and PR links. Open product and operational decisions remain explicit in both documents.
 
 - [x] Record the first PRD draft.
 - [ ] Review scope and resolve D1–D7 with dated decisions.
