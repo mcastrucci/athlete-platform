@@ -175,7 +175,7 @@ Meeting thresholds supports another iteration, not proof of product-market fit. 
 
 Reserving space for these in a future model does not mean they are implemented.
 
-## 9. Decisions before the technical plan
+## 9. Open decisions and implementation gates
 
 | ID | Decision | Initial proposal |
 | --- | --- | --- |
@@ -189,13 +189,15 @@ Reserving space for these in a future model does not mean they are implemented.
 
 The commercial name, monetization model, and gym management do not block the pilot.
 
+The technical plan may be drafted while these decisions remain open. Resolve implementation-blocking choices in S0 and operational readiness gates before external onboarding; publishing the plan does not imply that D1–D7 are closed. On 2026-10-27, the product owner selected Cloud Run + Neon with portability to Cloud SQL; D7 retention and provider-processing details remain open.
+
 ## 10. Repository tracking
 
 This PRD holds scope and acceptance criteria. The [pilot technical plan](../engineering/pilot-plan.md) records the agreed technical direction, proposed architecture, implementation stages, validation, and PR links. Open product and operational decisions remain explicit in both documents.
 
 - [x] Record the first PRD draft.
 - [ ] Review scope and resolve D1–D7 with dated decisions.
-- [ ] Prepare the technical plan and decide what to reuse from the existing engine.
+- [x] Prepare the proposed technical plan and identify engine reuse in [PR #2](https://github.com/mcastrucci/athlete-platform/pull/2); implementation details remain subject to review.
 - [ ] Verify P1–P6 and expert review before onboarding third parties.
 - [ ] Run the pilot and record results against the hypotheses.
 
