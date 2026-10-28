@@ -4,7 +4,7 @@ A product to help athletes who already train organize their development: clear g
 
 Internal working name. The commercial brand is still undecided.
 
-This repository contains product definition, decisions, and the initial Python service foundation. Training workflows, authentication, and deployment are not implemented yet.
+This repository contains product definition, the Python service foundation, and owned, versioned athlete profiles. Training imports, provider onboarding, and deployment are not implemented yet.
 
 ## Local development
 
@@ -44,10 +44,13 @@ Settings use the `ATHLETE_` prefix and read `.env` locally; process environment 
 | `ATHLETE_DATABASE_POOL_SIZE` | Connections per engine; default 2 |
 | `ATHLETE_DATABASE_MAX_OVERFLOW` | Extra connections per engine; default 0 |
 | `ATHLETE_DATABASE_POOL_TIMEOUT` | Seconds to wait for a pooled connection; default 10 |
+| `ATHLETE_OIDC_ISSUER` | Exact HTTPS JWT issuer, including its trailing slash if present |
+| `ATHLETE_OIDC_AUDIENCE` | Required token audience for this API |
+| `ATHLETE_OIDC_JWKS_URL` | Configured HTTPS verification-key endpoint; never taken from token headers |
 
 Supply TLS options in the PostgreSQL URL for remote databases. Keep pool limits small across processes. The runtime engine is lazy, and callers own its disposal. Use `build_session_factory(engine)` to retain loaded ORM attributes after commit and close; unloaded relationships still require an active session. Each application transaction gets a separate session that commits on success, rolls back on failure, and closes on exit. Never hold a transaction open during a model call.
 
-Alembic uses the direct migration DSN without putting secrets into `alembic.ini`. The initial migration establishes only the revision baseline; athlete/product tables belong to [issue #5](https://github.com/mcastrucci/athlete-platform/issues/5). Do not use `Base.metadata.create_all()` to replace migrations.
+Alembic uses the direct migration DSN without putting secrets into `alembic.ini`. The baseline is followed by migration `0002_profiles`, which adds users, owned athletes, and profile revisions. Do not use `Base.metadata.create_all()` to replace migrations.
 
 For future model changes:
 
@@ -82,6 +85,14 @@ uv run --locked pytest
 For subsequent runs, reuse the test database without rerunning `createdb`. Integration selection fails if `TEST_DATABASE_URL` is missing; it does not silently skip. Tests verify transaction rollback after a real PostgreSQL constraint failure, JSONB persistence, direct migration DSN selection, schema drift, and migration round trips.
 
 GitHub Actions runs the same checks with an ephemeral PostgreSQL 17 service. No model or cloud credentials are needed.
+
+## Athlete profile API
+
+See [profile access and versioning](docs/engineering/profiles.md) for contracts, examples, and the authentication/RLS decisions. Authentication is fail-closed: without an issuer, audience, and JWKS endpoint, protected endpoints return 503 for a supplied token. Missing or invalid credentials return 401; health remains public and performs no database access.
+
+The current adapter supports RS256-signed JWTs, validates signature, issuer, audience, expiry, issued-at, and subject, and retrieves keys only from the configured endpoint. Choosing a managed provider, token type/claims, and onboarding remains [issue #3](https://github.com/mcastrucci/athlete-platform/issues/3); this change does not select or provision one.
+
+Profiles are created for the verified caller, not an athlete ID in a request body. Each full replacement requires an expected version, appends a revision, and rejects stale edits with 409. Another user's resource returns 404, including historical versions. Baselines and reported skill levels are self-reported context, not verified performance or automatic skill assessments.
 
 ## Language convention
 

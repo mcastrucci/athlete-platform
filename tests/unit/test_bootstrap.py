@@ -17,7 +17,7 @@ def refuse_connection(*args: object, **kwargs: object) -> NoReturn:
 
 def test_health_does_not_access_database(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(Engine, "connect", refuse_connection)
-    monkeypatch.setenv("ATHLETE_DATABASE_URL", "invalid-unused-configuration")
+    monkeypatch.setenv("ATHLETE_DATABASE_URL", "postgresql+psycopg://user:pass@127.0.0.1:1/app")
 
     async def request_health() -> httpx.Response:
         transport = httpx.ASGITransport(app=create_app())

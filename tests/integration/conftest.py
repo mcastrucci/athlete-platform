@@ -27,7 +27,7 @@ def database_url() -> str:
 def engine(database_url: str) -> Iterator[Engine]:
     settings = Settings(
         database_url=SecretStr(database_url),
-        database_pool_size=1,
+        database_pool_size=2,
         database_max_overflow=0,
     )
     instance = build_engine(settings)
