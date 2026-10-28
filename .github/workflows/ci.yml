@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: athlete
+          POSTGRES_PASSWORD: athlete
+          POSTGRES_DB: athlete_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U athlete -d athlete_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      ATHLETE_ENVIRONMENT: test
+      ATHLETE_DATABASE_URL: postgresql+psycopg://athlete:athlete@127.0.0.1:5432/postgres
+      ATHLETE_MIGRATION_DATABASE_URL: postgresql+psycopg://athlete:athlete@127.0.0.1:5432/athlete_test
+      TEST_DATABASE_URL: postgresql+psycopg://athlete:athlete@127.0.0.1:5432/athlete_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.4"
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run --locked ruff check .
+      - run: uv run --locked ruff format --check .
+      - run: uv run --locked mypy
+      - run: docker compose config --quiet
+      - name: Migrate a fresh database and check for schema drift
+        run: |
+          uv run --locked alembic upgrade head
+          uv run --locked alembic check
+      - run: uv run --locked pytest
+      - run: uv run --locked athlete-worker
