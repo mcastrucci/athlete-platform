@@ -33,19 +33,29 @@ class PostgresProfiles:
         self.factory = factory
         self.identity = identity
 
-    def owned(self, session: Session, athlete_id: UUID) -> Athlete:
-        athlete = session.scalar(
+    def owned(self, session: Session, athlete_id: UUID | None) -> Athlete:
+        query = (
             select(Athlete)
             .join(User, Athlete.owner_user_id == User.id)
             .where(
-                Athlete.id == athlete_id,
                 User.issuer == self.identity.issuer,
                 User.subject == self.identity.subject,
             )
         )
+        if athlete_id is not None:
+            query = query.where(Athlete.id == athlete_id)
+        athlete = session.scalar(query)
         if athlete is None:
             raise ProfileNotFound
         return athlete
+
+    def read_owned(self) -> ProfileSnapshot:
+        with transaction(self.factory) as session:
+            athlete = self.owned(session, None)
+            row = session.get(ProfileRevision, (athlete.id, athlete.version))
+            if row is None:
+                raise ProfileNotFound
+            return snapshot(row)
 
     def create(self, content: ProfileContent) -> ProfileSnapshot:
         try:

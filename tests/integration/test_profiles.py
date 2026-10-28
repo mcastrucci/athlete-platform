@@ -90,6 +90,10 @@ def test_two_athletes_keep_independent_context_and_history(database_url: str) ->
         assert alice.status_code == bob.status_code == 201
         aid, bid = alice.json()["athlete_id"], bob.json()["athlete_id"]
         assert aid != bid
+        assert (await client.get("/v1/me/profile", headers=auth("alice"))).json()[
+            "athlete_id"
+        ] == aid
+        assert (await client.get("/v1/me/profile", headers=auth("bob"))).json()["athlete_id"] == bid
         assert alice.json()["content"]["skills"] is None
         assert bob.json()["content"]["baselines"] is None
         assert alice.json()["content"]["baselines"][0]["source"] == "self-report"

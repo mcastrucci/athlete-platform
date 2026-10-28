@@ -39,7 +39,7 @@ def create_app(
 ) -> FastAPI:
     settings = settings or Settings()
     if test_identity_verifier is not None and (
-        settings.environment != "test" or os.getenv("K_SERVICE") or os.getenv("K_JOB")
+        settings.environment != "test" or os.getenv("K_SERVICE") or os.getenv("CLOUD_RUN_JOB")
     ):
         raise ValueError("Test identity overrides are allowed only in local test processes")
     verifier: IdentityVerifier = test_identity_verifier or UnconfiguredIdentityVerifier()
@@ -104,6 +104,10 @@ def create_app(
         version: Annotated[int | None, Query(ge=1)] = None,
     ) -> ProfileSnapshot:
         return repository.read(athlete_id, version)
+
+    @app.get("/v1/me/profile", response_model=ProfileSnapshot)
+    def read_own_profile(repository: Annotated[Profiles, Depends(profiles)]) -> ProfileSnapshot:
+        return repository.read_owned()
 
     @app.put("/v1/athletes/{athlete_id}/profile", response_model=ProfileSnapshot)
     def update_profile(

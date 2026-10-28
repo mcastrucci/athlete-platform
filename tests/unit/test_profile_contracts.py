@@ -35,8 +35,11 @@ def test_identity_override_is_rejected_outside_tests(environment: str) -> None:
         create_app(settings=settings, test_identity_verifier=TestVerifier())
 
 
-def test_identity_override_is_rejected_in_cloud_run(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("K_SERVICE", "deployed-api")
+@pytest.mark.parametrize("marker", ["K_SERVICE", "CLOUD_RUN_JOB"])
+def test_identity_override_is_rejected_in_cloud_run(
+    marker: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv(marker, "deployed-process")
     with pytest.raises(ValueError, match="only in local test"):
         create_app(settings=Settings(environment="test"), test_identity_verifier=TestVerifier())
 

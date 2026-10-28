@@ -19,6 +19,7 @@ The initial scope is one athlete per identity. Shared coaches, delegated access,
 | Endpoint | Behavior |
 | --- | --- |
 | POST /v1/athletes | Create the caller's athlete and revision 1; duplicate creation returns 409 |
+| GET /v1/me/profile | Recover the caller's current profile/athlete ID after a new login |
 | GET /v1/athletes/{id}/profile | Read the caller's latest revision |
 | GET /v1/athletes/{id}/profile?version=1 | Read a specific owned historical revision |
 | PUT /v1/athletes/{id}/profile | Replace the complete profile with expected_version and content; stale versions return 409 |
