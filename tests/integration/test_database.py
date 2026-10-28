@@ -3,12 +3,12 @@
 import pytest
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from athlete_platform.infrastructure.database import transaction
+from athlete_platform.infrastructure.database import build_session_factory, transaction
 
 pytestmark = pytest.mark.integration
 
@@ -19,7 +19,7 @@ def test_failed_transaction_rolls_back_all_its_writes_and_session_recovers(engin
             text("CREATE TEMP TABLE rollback_probe (id integer PRIMARY KEY, value jsonb NOT NULL)")
         )
         connection.commit()
-        factory = sessionmaker(bind=connection, class_=Session, expire_on_commit=False)
+        factory = build_session_factory(connection)
 
         with transaction(factory) as session:
             session.execute(text('INSERT INTO rollback_probe VALUES (1, \'{"state": "kept"}\')'))
@@ -34,6 +34,35 @@ def test_failed_transaction_rolls_back_all_its_writes_and_session_recovers(engin
             session.execute(text("INSERT INTO rollback_probe VALUES (3, '{}')"))
 
         assert connection.execute(text("SELECT count(*) FROM rollback_probe")).scalar_one() == 2
+
+
+def test_loaded_attributes_remain_readable_after_commit_and_close(engine: Engine) -> None:
+    class ProbeBase(DeclarativeBase):
+        pass
+
+    class Probe(ProbeBase):
+        __tablename__ = "orm_probe"
+        __table_args__ = {"prefixes": ["TEMPORARY"]}
+
+        id: Mapped[int] = mapped_column(primary_key=True)
+        name: Mapped[str]
+
+    with engine.connect() as connection:
+        ProbeBase.metadata.create_all(connection)
+        connection.commit()
+        factory = build_session_factory(connection)
+        with transaction(factory) as session:
+            probe = Probe(id=1, name="synthetic")
+            session.add(probe)
+        assert inspect(probe).detached
+        assert probe.id == 1
+        assert probe.name == "synthetic"
+
+        with transaction(factory) as session:
+            loaded = session.get(Probe, 1)
+            assert loaded is not None
+        assert inspect(loaded).detached
+        assert loaded.name == "synthetic"
 
 
 def test_migrations_use_direct_dsn_and_support_round_trip(

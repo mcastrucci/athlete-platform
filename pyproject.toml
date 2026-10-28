@@ -27,6 +27,7 @@ packages = ["src/athlete_platform"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = "-ra --strict-markers --strict-config"
 markers = ["integration: requires an explicitly configured disposable PostgreSQL database"]
 

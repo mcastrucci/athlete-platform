@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 
 from sqlalchemy import MetaData, create_engine
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from athlete_platform.config import Settings
@@ -33,6 +33,11 @@ def build_engine(settings: Settings) -> Engine:
         hide_parameters=True,
         connect_args={"connect_timeout": 10},
     )
+
+
+def build_session_factory(bind: Engine | Connection) -> sessionmaker[Session]:
+    """Retain loaded attributes after commit; unloaded relationships still need a session."""
+    return sessionmaker(bind=bind, class_=Session, expire_on_commit=False)
 
 
 @contextmanager

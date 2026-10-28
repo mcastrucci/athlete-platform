@@ -22,7 +22,7 @@ def test_health_does_not_access_database(monkeypatch: pytest.MonkeyPatch) -> Non
     async def request_health() -> httpx.Response:
         transport = httpx.ASGITransport(app=create_app())
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            return await client.get("/healthz")
+            return await client.get("/health/live")
 
     response = asyncio.run(request_health())
     assert response.status_code == 200

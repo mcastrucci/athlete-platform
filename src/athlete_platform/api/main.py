@@ -11,7 +11,7 @@ class HealthResponse(BaseModel):
 def create_app() -> FastAPI:
     app = FastAPI(title="Athlete Platform", version="0.1.0")
 
-    @app.get("/healthz", response_model=HealthResponse, tags=["operations"])
+    @app.get("/health/live", response_model=HealthResponse, tags=["operations"])
     def health() -> HealthResponse:
         """Report process liveness, not database readiness."""
         return HealthResponse()

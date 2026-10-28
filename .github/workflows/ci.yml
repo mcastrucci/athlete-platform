@@ -28,7 +28,7 @@ jobs:
           --health-retries 10
     env:
       ATHLETE_ENVIRONMENT: test
-      ATHLETE_DATABASE_URL: postgresql+psycopg://athlete:athlete@127.0.0.1:5432/athlete_test
+      ATHLETE_DATABASE_URL: postgresql+psycopg://athlete:athlete@127.0.0.1:5432/postgres
       ATHLETE_MIGRATION_DATABASE_URL: postgresql+psycopg://athlete:athlete@127.0.0.1:5432/athlete_test
       TEST_DATABASE_URL: postgresql+psycopg://athlete:athlete@127.0.0.1:5432/athlete_test
     steps:

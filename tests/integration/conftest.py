@@ -9,14 +9,18 @@ from sqlalchemy.engine import Engine
 
 from athlete_platform.config import Settings
 from athlete_platform.infrastructure.database import build_engine
+from tests.database_safety import validate_test_database
 
 
 @pytest.fixture(scope="session")
 def database_url() -> str:
-    value = os.environ.get("TEST_DATABASE_URL")
-    if not value:
-        pytest.fail("Set TEST_DATABASE_URL to a disposable PostgreSQL database")
-    return value
+    runtime = Settings().database_url
+    try:
+        return validate_test_database(
+            os.environ.get("TEST_DATABASE_URL"), runtime.get_secret_value() if runtime else None
+        )
+    except ValueError as error:
+        pytest.fail(str(error), pytrace=False)
 
 
 @pytest.fixture

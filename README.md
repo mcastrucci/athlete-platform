@@ -22,11 +22,11 @@ uv run --locked uvicorn athlete_platform.api.main:create_app --factory --reload 
 In another terminal:
 
 ```bash
-curl --fail http://127.0.0.1:8000/healthz
+curl --fail http://127.0.0.1:8000/health/live
 uv run --locked athlete-worker
 ```
 
-`/healthz` reports process liveness and returns `{"status":"ok"}`. It does not query PostgreSQL or external services and does not certify database readiness. API documentation is available at `/docs`.
+`/health/live` reports process liveness and returns `{"status":"ok"}`. It does not query PostgreSQL or external services and does not certify database readiness. API documentation is available at `/docs`.
 
 The worker is deliberately a bootstrap: it logs that no handlers exist and exits successfully without polling or opening a database connection. Durable jobs are tracked in [issue #6](https://github.com/mcastrucci/athlete-platform/issues/6).
 
@@ -45,7 +45,7 @@ Settings use the `ATHLETE_` prefix and read `.env` locally; process environment 
 | `ATHLETE_DATABASE_MAX_OVERFLOW` | Extra connections per engine; default 0 |
 | `ATHLETE_DATABASE_POOL_TIMEOUT` | Seconds to wait for a pooled connection; default 10 |
 
-Supply TLS options in the PostgreSQL URL for remote databases. Keep pool limits small across processes. The runtime engine is lazy, and callers own its disposal. Each application transaction gets a separate session that commits on success, rolls back on failure, and closes on exit. Never hold a transaction open during a model call.
+Supply TLS options in the PostgreSQL URL for remote databases. Keep pool limits small across processes. The runtime engine is lazy, and callers own its disposal. Use `build_session_factory(engine)` to retain loaded ORM attributes after commit and close; unloaded relationships still require an active session. Each application transaction gets a separate session that commits on success, rolls back on failure, and closes on exit. Never hold a transaction open during a model call.
 
 Alembic uses the direct migration DSN without putting secrets into `alembic.ini`. The initial migration establishes only the revision baseline; athlete/product tables belong to [issue #5](https://github.com/mcastrucci/athlete-platform/issues/5). Do not use `Base.metadata.create_all()` to replace migrations.
 
@@ -71,7 +71,7 @@ uv run --locked mypy
 uv run --locked pytest -m "not integration"
 ```
 
-Integration tests require an explicitly selected **disposable** PostgreSQL database. They exercise migration downgrade/upgrade and must never target a deployed or shared database. Create the test database once after starting Compose:
+Integration tests require an explicitly selected **disposable** PostgreSQL database. They exercise migration downgrade/upgrade and must never target a deployed or shared database. Before connecting, the test fixture requires a database name ending in `_test` and rejects a target matching the configured runtime host/port/database, including runtime configuration loaded from `.env`. This catches common mistakes; it cannot prove disposability or detect all host aliases. Use dedicated test credentials without access to deployed databases. Create the test database once after starting Compose:
 
 ```bash
 docker compose exec postgres createdb -U athlete athlete_test
