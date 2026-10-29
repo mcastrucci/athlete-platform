@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 
 from pydantic import JsonValue, TypeAdapter
 from sqlalchemy import and_, func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
 from athlete_platform.application.jobs import (
@@ -26,6 +27,7 @@ from athlete_platform.infrastructure.job_models import DailyJobAttempts, Extract
 from athlete_platform.infrastructure.models import Athlete, User
 
 payload_adapter = TypeAdapter(dict[str, JsonValue])
+IDEMPOTENCY_CONSTRAINT = "uq_extraction_jobs_athlete_id"
 
 
 def validated_payload(payload: dict[str, JsonValue]) -> tuple[dict[str, JsonValue], str]:
@@ -34,6 +36,14 @@ def validated_payload(payload: dict[str, JsonValue]) -> tuple[dict[str, JsonValu
     if len(encoded) > 65536:
         raise ValueError("Job payload exceeds 64 KiB")
     return value, hashlib.sha256(encoded).hexdigest()
+
+
+def is_idempotency_violation(error: IntegrityError) -> bool:
+    diag = getattr(error.orig, "diag", None)
+    return (
+        getattr(error.orig, "sqlstate", None) == "23505"
+        and getattr(diag, "constraint_name", None) == IDEMPOTENCY_CONSTRAINT
+    )
 
 
 def view(job: ExtractionJob) -> JobView:
@@ -89,6 +99,26 @@ class PostgresJobs:
         if not key.strip() or len(key) > 128:
             raise ValueError("Idempotency key must contain 1–128 characters")
         payload, digest = validated_payload(payload)
+        try:
+            return self._insert(identity, athlete_id, key, payload, digest)
+        except IntegrityError as error:
+            if not is_idempotency_violation(error):
+                raise
+        # A concurrent enqueue committed this key first; resolve against its stored input.
+        with transaction(self.factory) as session:
+            existing = self._existing(session, athlete_id, key, digest)
+            if existing is None:
+                raise JobNotFound
+            return existing
+
+    def _insert(
+        self,
+        identity: VerifiedIdentity,
+        athlete_id: UUID,
+        key: str,
+        payload: dict[str, JsonValue],
+        digest: str,
+    ) -> JobView:
         with transaction(self.factory) as session:
             athlete = session.scalar(
                 select(Athlete)
@@ -102,16 +132,9 @@ class PostgresJobs:
             )
             if athlete is None:
                 raise JobNotFound
-            existing = session.scalar(
-                select(ExtractionJob).where(
-                    ExtractionJob.athlete_id == athlete_id,
-                    ExtractionJob.idempotency_key == key,
-                )
-            )
+            existing = self._existing(session, athlete_id, key, digest)
             if existing is not None:
-                if existing.input_hash != digest:
-                    raise JobConflict
-                return view(existing)
+                return existing
             active = session.scalar(
                 select(func.count())
                 .select_from(ExtractionJob)
@@ -137,6 +160,21 @@ class PostgresJobs:
             session.add(job)
             session.flush()
             return view(job)
+
+    def _existing(
+        self, session: Session, athlete_id: UUID, key: str, digest: str
+    ) -> JobView | None:
+        existing = session.scalar(
+            select(ExtractionJob).where(
+                ExtractionJob.athlete_id == athlete_id,
+                ExtractionJob.idempotency_key == key,
+            )
+        )
+        if existing is None:
+            return None
+        if existing.input_hash != digest:
+            raise JobConflict
+        return view(existing)
 
     def get(self, identity: VerifiedIdentity, job_id: UUID) -> JobView:
         with transaction(self.factory) as session:

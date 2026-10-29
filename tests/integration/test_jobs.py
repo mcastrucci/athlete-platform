@@ -110,6 +110,36 @@ def test_idempotency_and_ownership_are_enforced(engine: Engine) -> None:
         )
 
 
+def enqueue_pair(
+    queue: PostgresJobs, identity: VerifiedIdentity, athlete_id: UUID, sources: list[str]
+) -> list[str]:
+    barrier = Barrier(2)
+
+    def enqueue(source: str) -> str:
+        barrier.wait()
+        try:
+            return str(queue.enqueue(identity, athlete_id, "race", {"source": source}).id)
+        except JobConflict:
+            return "conflict"
+
+    with ThreadPoolExecutor(2) as pool:
+        return list(pool.map(enqueue, sources))
+
+
+@pytest.mark.parametrize("isolation", ["READ COMMITTED", "REPEATABLE READ"])
+def test_concurrent_enqueues_resolve_to_the_stored_job(engine: Engine, isolation: str) -> None:
+    # REPEATABLE READ snapshots miss the winner's row, so the loser hits the unique constraint.
+    queue = PostgresJobs(build_session_factory(engine.execution_options(isolation_level=isolation)))
+    for _ in range(5):
+        identity, aid = actor(engine)
+        first, second = enqueue_pair(queue, identity, aid, ["same", "same"])
+        assert first == second != "conflict"
+
+        identity, aid = actor(engine)
+        outcomes = enqueue_pair(queue, identity, aid, ["one", "other"])
+        assert outcomes.count("conflict") == 1
+
+
 def test_concurrent_claims_and_skip_locked(engine: Engine) -> None:
     factory = build_session_factory(engine)
     queue = PostgresJobs(factory)
