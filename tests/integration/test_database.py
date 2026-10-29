@@ -3,6 +3,7 @@
 import pytest
 from alembic import command
 from alembic.config import Config
+from alembic.script import ScriptDirectory
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
@@ -76,7 +77,7 @@ def test_migrations_use_direct_dsn_and_support_round_trip(
     command.check(config)
     with engine.connect() as connection:
         assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == (
-            "0001_baseline"
+            ScriptDirectory.from_config(config).get_current_head()
         )
     command.downgrade(config, "base")
     with engine.connect() as connection:

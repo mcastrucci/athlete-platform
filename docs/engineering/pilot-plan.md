@@ -1,6 +1,6 @@
 # Pilot technical plan
 
-- Status: implementation started; service foundation in PR #9 (issue #4). Training workflows remain unimplemented.
+- Status: implementation started; service foundation in PR #9 (issue #4). Profile access/versioning is implemented in PR #10 (issue #5); training imports and evaluation remain unimplemented.
 - Date: 2026-10-27.
 - Product scope: [Pilot PRD](../product/pilot-prd.md).
 - Decisions confirmed by the product owner on 2026-10-27: Python, FastAPI, PostgreSQL, SQLAlchemy, Alembic, private file storage, and durable background processing without graph orchestration.
@@ -232,7 +232,7 @@ Each stage gets one or more reviewable PRs. Replace “Pending” with implement
 | Stage | Scope and PRD mapping | Required validation | PR |
 | --- | --- | --- | --- |
 | S0 | Record Cloud Run + Neon decision; close remaining choices: storage, auth/models, client, reviewer/operations, upload limits and budgets; D1–D7 | Dated decision record; distinguish technical approval from recruitment and expert availability | Pending |
-| S1 | Project foundation, API/worker entry points, PostgreSQL, migrations, identity/scope; P1 | Fresh database migration; two-user isolation including cross-athlete references; local startup; explicit RLS decision | Foundation: [PR #9](https://github.com/mcastrucci/athlete-platform/pull/9); identity remains in issue #5 |
+| S1 | Project foundation, API/worker entry points, PostgreSQL, migrations, identity/scope; P1 | Fresh database migration; two-user isolation including cross-athlete references; local startup; explicit RLS decision | Foundation: [PR #9](https://github.com/mcastrucci/athlete-platform/pull/9); profiles/identity: [PR #10](https://github.com/mcastrucci/athlete-platform/pull/10); provider onboarding remains in issue #3 |
 | S2 | Typed training model, profile/context, canonical revisions, engine extraction; P1/P3 | Synthetic parity cases and transaction rollback; unknown vs zero; timezone cases | Pending |
 | S3 | Sources, object storage adapter, durable queue and imports; P2 | Every input format; corrupt/ambiguous files; parser isolation and resource limits; duplicate request; missed dispatch, lease recovery, stale worker fencing and quota races | Pending |
 | S4 | Corrections, confirmation, evaluation and proposal lifecycle; P2–P4 | Idempotent confirmation; input manifests; hard constraints; stale output and concurrent acceptance rejection | Pending |
