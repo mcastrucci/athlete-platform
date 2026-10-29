@@ -28,7 +28,7 @@ uv run --locked athlete-worker
 
 `/health/live` reports process liveness and returns `{"status":"ok"}`. It does not query PostgreSQL or external services and does not certify database readiness. API documentation is available at `/docs`.
 
-The worker is deliberately a bootstrap: it logs that no handlers exist and exits successfully without polling or opening a database connection. Durable jobs are tracked in [issue #6](https://github.com/mcastrucci/athlete-platform/issues/6).
+The worker CLI is deliberately a bootstrap: it logs that no handlers exist and exits successfully without polling or opening a database connection. The [durable queue and bounded runner](docs/engineering/job-queue.md) are available as Python services; connecting a production extraction handler remains in [issue #6](https://github.com/mcastrucci/athlete-platform/issues/6).
 
 Compose exposes PostgreSQL 17 on `127.0.0.1:5433` with development-only credentials. It stores data in a named volume. Stop it with `docker compose down`; this preserves the volume. Do not use the sample credentials outside local development.
 
