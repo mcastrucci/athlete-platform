@@ -1,6 +1,6 @@
 # Authentication and initial extraction model
 
-- Status: **partly decided.** Section 4 records the product owner's dated decisions; any row still marked Pending remains a proposal.
+- Status: **decided for the first vertical slice** (owner, 2026-10-29). Two rows in section 4 remain open by design: the accuracy threshold, set after the first corpus run, and the provider retention review, required before external onboarding.
 - Date: 2026-10-29.
 - Scope: the minimum choices for the first vertical slice in [issue #3](https://github.com/mcastrucci/athlete-platform/issues/3). Frontend, reviewer availability, broader import formats, and external onboarding remain later gates.
 - Constraints: Cloud Run + Neon with portability to Cloud SQL (owner decision, 2026-10-27); the existing `IdentityVerifier` contract (RS256 JWT, exact issuer and audience, HTTPS JWKS, users keyed by issuer and subject); the extraction rules in the [technical plan, section 4](pilot-plan.md#4-import-pipeline-and-model-responsibilities).
@@ -97,16 +97,16 @@ The corpus is synthetic only and includes the cases already required by #6: stre
 
 ## 3. Initial limits and budget
 
-Proposed defaults, all configurable and enforced in the application before any provider call:
+Decided by the owner on 2026-10-29 as proposed. All values are configurable and enforced in the application before any provider call:
 
-| Limit | Proposed value | Notes |
+| Limit | Value | Notes |
 | --- | --- | --- |
 | Input text | 20,000 characters | Rejected before enqueue with a visible error |
 | Input tokens per request | 16,000 | Checked with token counting before the call |
 | Output tokens per request (`max_tokens`) | 8,000 | Covers thinking and visible output together. With thinking disabled it is all visible output. A route that enables thinking must raise this cap. Truncation is a failure, not a partial result |
 | Attempts per job | 3 | Matches the queue's current `max_attempts` default |
 | Extraction attempts per athlete per UTC day | 20 | Lower than the queue's current default of 50 |
-| Global monthly model budget | USD 25 (decided 2026-10-29) | Across all providers. The application budget gate blocks new calls when exhausted; warnings at 50% and 80% |
+| Global monthly model budget | USD 25 | Across all providers. The application budget gate blocks new calls when exhausted; warnings at 50% and 80% |
 | Concurrent provider calls | 2 | Bounded per worker execution |
 
 Cloud billing alerts are notifications only. The application gate is the hard stop, and an uncertain timeout keeps its spend reservation until reconciled.
@@ -121,7 +121,7 @@ Real-model testing uses synthetic data only, under a separate development budget
 | Model route | Vertex AI (Google managed) | **Provider APIs with server-held keys and per-task routing; Anthropic API first** | 2026-10-29 |
 | Initial model | Opus 5.5 at `low` effort, compared on the corpus | **Claude Haiku 5.5** at `low` effort; escalate only after a corpus comparison | 2026-10-29 |
 | Global monthly model budget | USD 25 | **USD 25 across all providers** | 2026-10-29 |
-| Other limits (section 3) | Input size, tokens, attempts, daily quota, concurrency, development budget | Pending | — |
+| Other limits (section 3) | Input size, tokens, attempts, daily quota, concurrency, development budget | **Accepted as proposed** | 2026-10-29 |
 | Minimum field-level accuracy | Set after the first corpus run | Pending (deferred to the first run, as proposed) | — |
 | Provider retention and data processing (part of D7) | Review Firebase/Identity Platform and Anthropic API terms before onboarding; each additional provider before use | Pending | — |
 

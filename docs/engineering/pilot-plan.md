@@ -5,7 +5,7 @@
 - Product scope: [Pilot PRD](../product/pilot-prd.md).
 - Decisions confirmed by the product owner on 2026-10-27: Python, FastAPI, PostgreSQL, SQLAlchemy, Alembic, private file storage, and durable background processing without graph orchestration.
 - Hosting decision confirmed by the product owner on 2026-10-27: Cloud Run + Neon for the pilot; retain portability to Cloud SQL.
-- Decisions confirmed by the product owner on 2026-10-29: Firebase Authentication; provider APIs with server-held keys and per-task model routing, starting with the Anthropic API and Claude Haiku 5.5; a USD 25 monthly model budget across providers. Remaining limits, the accuracy threshold, and provider retention stay open. See [auth-and-extraction-model.md](auth-and-extraction-model.md).
+- Decisions confirmed by the product owner on 2026-10-29: Firebase Authentication; provider APIs with server-held keys and per-task model routing, starting with the Anthropic API and Claude Haiku 5.5; a USD 25 monthly model budget across providers; the remaining request, attempt, quota, concurrency, and development-budget limits as proposed. The accuracy threshold (set after the first corpus run) and provider retention review stay open. See [auth-and-extraction-model.md](auth-and-extraction-model.md).
 - Proposed implementation details pending review: PostgreSQL-backed job queue, private Cloud Storage buckets, on-demand Cloud Run Job execution, and the logical schema below. Client technology remains open.
 - Decision status: approval of the stack does not establish recruitment, reviewer availability, retention settings, or all PRD D1–D7 decisions.
 - Working principle: explicit application workflows and persisted state; no graph orchestration framework is required for the pilot.
