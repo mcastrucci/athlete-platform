@@ -4,7 +4,10 @@ from alembic import context
 from sqlalchemy import create_engine, pool
 
 from athlete_platform.config import Settings
-from athlete_platform.infrastructure import models  # noqa: F401
+from athlete_platform.infrastructure import (
+    job_models,  # noqa: F401
+    models,  # noqa: F401
+)
 from athlete_platform.infrastructure.database import Base
 
 target_metadata = Base.metadata
