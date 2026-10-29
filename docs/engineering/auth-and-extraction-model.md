@@ -12,7 +12,7 @@
 
 | | A. Firebase Authentication (Google Identity Platform) | B. Auth0 | C. Self-hosted OIDC (Keycloak, Zitadel) |
 | --- | --- | --- | --- |
-| Fit with the current verifier | RS256 ID tokens; issuer `https://securetoken.google.com/<project-id>`, audience `<project-id>`, public JWKS. Works with the adapter's existing configuration | RS256 access tokens issued for a configured API audience; the cleanest match to an access-token contract | Configurable; RS256 and JWKS are standard |
+| Fit with the current verifier | RS256 ID tokens with a `kid`; issuer `https://securetoken.google.com/<project-id>` and audience `<project-id>` match the adapter. Google's verification guide publishes the keys as an x509 certificate map, not the JWKS document the adapter fetches, and requires `auth_time` in the past, which the adapter does not check. Needs adapter changes (see the decision below) | RS256 access tokens issued for a configured API audience; the cleanest match to an access-token contract | Configurable; RS256 and JWKS are standard |
 | Operations | Managed; same Google Cloud project and billing as Cloud Run | Managed; separate vendor and account | We run, patch, back up, and secure it |
 | Sign-in methods for the pilot | Google sign-in and passwordless email link available | Social and passwordless available | Available, but we build the flows |
 | Cost at pilot scale (5 athletes) | Expected within the free allowance; confirm current Identity Platform pricing before enabling | The free plan lists 25,000 monthly active users; paid tiers start at a monthly fee | Hosting and maintenance time |
@@ -23,7 +23,10 @@
 
 **A. Firebase Authentication**, with Google sign-in and passwordless email link. No passwords are stored by this product.
 
-- Configure `ATHLETE_OIDC_ISSUER=https://securetoken.google.com/<project-id>`, `ATHLETE_OIDC_AUDIENCE=<project-id>`, and the SecureToken JWKS URL. Confirm the exact JWKS URL, key rotation, and token lifetime against Google's documentation when the project is created.
+- Configure `ATHLETE_OIDC_ISSUER=https://securetoken.google.com/<project-id>` and `ATHLETE_OIDC_AUDIENCE=<project-id>`.
+- Before the adapter accepts Firebase tokens, it needs two changes, each with synthetic tests:
+  - Key material: fetch the x509 certificate map that Google's ID-token guide documents (`https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com`), select the certificate by `kid`, and honor its cache headers. Alternatively, use a JWKS endpoint only after confirming Google documents and supports it. The key source stays configuration, never a token header.
+  - Claims: require `auth_time` and reject tokens whose `auth_time` is in the future, in addition to the current `exp`, `iat`, `iss`, `aud`, and `sub` checks. Confirm the remaining claim rules and token lifetime against Google's guide when the project is created.
 - Short token lifetime is the revocation boundary. A disabled user can keep using an already-issued token until it expires. If the pilot needs immediate revocation, add a revocation check in the adapter. Do not add provider calls to the domain.
 - Keep the adapter provider-neutral. Firebase-specific claims (`firebase.sign_in_provider`, `email_verified`) may be read in infrastructure only. Authorization never relies on email.
 - Local and test identities remain injected only under `environment=test`, as today.
@@ -68,7 +71,7 @@ Anthropic list prices per million input/output tokens at the time of writing. Ot
 
 **Decision (2026-10-29):** start with **Claude Haiku 5.5** (`claude-haiku-5-5`) at `low` effort. Run the controlled synthetic corpus on it first. If it misses the acceptance bar below, compare Sonnet 5.5 and Opus 5.5 on the same corpus before changing the route. Record the model, effort, and prompt template version in every extraction run, as the technical plan requires.
 
-Rough cost per extraction, assuming about 3,000 cacheable system and schema tokens, 1,500 tokens of training text, and 2,500 output and reasoning tokens:
+Rough cost per extraction, assuming about 3,000 cacheable system and schema tokens, 1,500 tokens of training text, and 2,500 output tokens (thinking disabled on the Haiku route):
 
 - Opus 5.5: about USD 0.07.
 - Haiku 5.5: well under USD 0.01.
@@ -88,7 +91,8 @@ The corpus is synthetic only and includes the cases already required by #6: stre
 
 - The provider's native structured-output mode with the interpretation JSON schema (`output_config.format` on the Anthropic API); no tools of any kind. The response is untrusted data and is validated again with Pydantic.
 - The training text is passed as data in the user turn, delimited from instructions. Only the minimum athlete context needed (time zone, catalog vocabulary) is included.
-- No hidden reasoning is requested or stored. Only validated output, usage, model identifier, and versions are persisted.
+- Thinking: the initial Haiku 5.5 route sends `thinking: {"type": "disabled"}`. Haiku 5.5 thinks by default, including at `low` effort, and it accepts `disabled` at `high` effort or below. Enabling thinking is a route change: it needs a corpus run and a raised output cap.
+- Thinking blocks are never persisted. Only validated output, usage, model identifier, and versions are stored.
 - Prompt caching for the stable system prompt and schema where the provider supports it.
 
 ## 3. Initial limits and budget
@@ -99,7 +103,7 @@ Proposed defaults, all configurable and enforced in the application before any p
 | --- | --- | --- |
 | Input text | 20,000 characters | Rejected before enqueue with a visible error |
 | Input tokens per request | 16,000 | Checked with token counting before the call |
-| Output tokens per request (`max_tokens`) | 8,000 | Truncation is a failure, not a partial result |
+| Output tokens per request (`max_tokens`) | 8,000 | Covers thinking and visible output together. With thinking disabled it is all visible output. A route that enables thinking must raise this cap. Truncation is a failure, not a partial result |
 | Attempts per job | 3 | Matches the queue's current `max_attempts` default |
 | Extraction attempts per athlete per UTC day | 20 | Lower than the queue's current default of 50 |
 | Global monthly model budget | USD 25 (decided 2026-10-29) | Across all providers. The application budget gate blocks new calls when exhausted; warnings at 50% and 80% |
