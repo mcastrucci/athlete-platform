@@ -6,6 +6,15 @@ from jwt import PyJWKClient
 from athlete_platform.domain.identity import IdentityUnavailable, InvalidIdentity, VerifiedIdentity
 
 
+class ProviderJWKClient(PyJWKClient):
+    def get_signing_keys(self, refresh: bool = False) -> list[jwt.PyJWK]:
+        """Classify download/parse/key-set failures before token key matching."""
+        try:
+            return super().get_signing_keys(refresh)
+        except (jwt.PyJWTError, ValueError, TypeError):
+            raise IdentityUnavailable("Identity verification is temporarily unavailable") from None
+
+
 class UnconfiguredIdentityVerifier:
     def verify(self, token: str) -> VerifiedIdentity:
         raise IdentityUnavailable("Authentication is not configured")
@@ -15,7 +24,7 @@ class JWTIdentityVerifier:
     def __init__(self, issuer: str, audience: str, jwks_url: str) -> None:
         self.issuer = issuer
         self.audience = audience
-        self.keys = PyJWKClient(jwks_url, cache_jwk_set=True, lifespan=300, timeout=5)
+        self.keys = ProviderJWKClient(jwks_url, cache_jwk_set=True, lifespan=300, timeout=5)
 
     def verify(self, token: str) -> VerifiedIdentity:
         try:
@@ -37,7 +46,5 @@ class JWTIdentityVerifier:
             if not isinstance(subject, str) or not subject.strip() or len(subject) > 255:
                 raise InvalidIdentity
             return VerifiedIdentity(issuer=self.issuer, subject=subject)
-        except jwt.PyJWKClientConnectionError:
-            raise IdentityUnavailable("Identity verification is temporarily unavailable") from None
         except jwt.PyJWTError:
             raise InvalidIdentity from None
