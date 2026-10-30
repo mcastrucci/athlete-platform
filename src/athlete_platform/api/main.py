@@ -46,7 +46,11 @@ def create_app(
     if test_identity_verifier is None and settings.oidc_issuer is not None:
         assert settings.oidc_audience is not None and settings.oidc_jwks_url is not None
         verifier = JWTIdentityVerifier(
-            settings.oidc_issuer, settings.oidc_audience, str(settings.oidc_jwks_url)
+            settings.oidc_issuer,
+            settings.oidc_audience,
+            str(settings.oidc_jwks_url),
+            key_format=settings.oidc_key_format,
+            require_auth_time=settings.oidc_require_auth_time,
         )
     engine = build_engine(settings) if settings.database_url is not None else None
     factory = build_session_factory(engine) if engine is not None else None

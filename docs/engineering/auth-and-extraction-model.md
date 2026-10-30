@@ -24,7 +24,7 @@
 **A. Firebase Authentication**, with Google sign-in and passwordless email link. No passwords are stored by this product.
 
 - Configure `ATHLETE_OIDC_ISSUER=https://securetoken.google.com/<project-id>` and `ATHLETE_OIDC_AUDIENCE=<project-id>`.
-- Before the adapter accepts Firebase tokens, it needs two changes, each with synthetic tests:
+- Before the adapter accepts Firebase tokens, it needs two changes, each with synthetic tests (implemented through `ATHLETE_OIDC_KEY_FORMAT=x509` and `ATHLETE_OIDC_REQUIRE_AUTH_TIME=true`; see [profiles.md](profiles.md)):
   - Key material: fetch the x509 certificate map that Google's ID-token guide documents (`https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com`), select the certificate by `kid`, and honor its cache headers. Alternatively, use a JWKS endpoint only after confirming Google documents and supports it. The key source stays configuration, never a token header.
   - Claims: require `auth_time` and reject tokens whose `auth_time` is in the future, in addition to the current `exp`, `iat`, `iss`, `aud`, and `sub` checks. Confirm the remaining claim rules and token lifetime against Google's guide when the project is created.
 - Short token lifetime is the revocation boundary. A disabled user can keep using an already-issued token until it expires. If the pilot needs immediate revocation, add a revocation check in the adapter. Do not add provider calls to the domain.

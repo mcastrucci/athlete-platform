@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     oidc_issuer: str | None = Field(default=None, min_length=1, max_length=2000)
     oidc_audience: str | None = Field(default=None, min_length=1)
     oidc_jwks_url: HttpUrl | None = None
+    oidc_key_format: Literal["jwks", "x509"] = "jwks"
+    oidc_require_auth_time: bool = False
 
     @model_validator(mode="after")
     def validate_oidc(self) -> "Settings":

@@ -58,3 +58,13 @@ def test_oidc_configuration_is_atomic_and_keeps_exact_issuer(
         oidc_jwks_url=HttpUrl("https://issuer.invalid/keys"),
     )
     assert settings.oidc_issuer == "https://issuer.invalid"
+
+
+def test_oidc_key_format_is_restricted(monkeypatch: pytest.MonkeyPatch) -> None:
+    for key in list(os.environ):
+        if key.startswith("ATHLETE_OIDC_"):
+            monkeypatch.delenv(key)
+    assert Settings().oidc_key_format == "jwks"
+    assert Settings(oidc_key_format="x509").oidc_key_format == "x509"
+    with pytest.raises(ValidationError):
+        Settings(oidc_key_format="pem")  # type: ignore[arg-type]

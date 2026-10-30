@@ -47,6 +47,8 @@ Settings use the `ATHLETE_` prefix and read `.env` locally; process environment 
 | `ATHLETE_OIDC_ISSUER` | Exact HTTPS JWT issuer, including its trailing slash if present |
 | `ATHLETE_OIDC_AUDIENCE` | Required token audience for this API |
 | `ATHLETE_OIDC_JWKS_URL` | Configured HTTPS verification-key endpoint; never taken from token headers |
+| `ATHLETE_OIDC_KEY_FORMAT` | `jwks` (default) for a JWKS document, or `x509` for a `{kid: PEM certificate}` map such as Firebase's |
+| `ATHLETE_OIDC_REQUIRE_AUTH_TIME` | `true` to require an `auth_time` claim in the past (Firebase ID tokens); default `false` |
 
 Supply TLS options in the PostgreSQL URL for remote databases. Keep pool limits small across processes. The runtime engine is lazy, and callers own its disposal. Use `build_session_factory(engine)` to retain loaded ORM attributes after commit and close; unloaded relationships still require an active session. Each application transaction gets a separate session that commits on success, rolls back on failure, and closes on exit. Never hold a transaction open during a model call.
 
