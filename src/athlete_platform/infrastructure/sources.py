@@ -227,7 +227,10 @@ class PostgresSources:
 
 
 class PostgresExtractionResults:
-    """Worker-side writer; callers are trusted job handlers, never HTTP requests."""
+    """Worker-side writer; callers are trusted job handlers, never HTTP requests.
+
+    Handlers should pass the job ID as the run ID so every retry of one job is idempotent.
+    """
 
     def __init__(self, factory: sessionmaker[Session]) -> None:
         self.factory = factory
@@ -248,9 +251,14 @@ class PostgresExtractionResults:
                 if existing.source_id != source.id:
                     raise SourceConflict
                 return interpretation_snapshot(existing)
-            if source.duplicate_status in (DuplicateStatus.PENDING, DuplicateStatus.DISCARDED):
+            # Only the first extraction becomes current. A later run, such as a retry that
+            # minted a new run ID, must never displace an earlier result or a correction.
+            if (
+                source.duplicate_status in (DuplicateStatus.PENDING, DuplicateStatus.DISCARDED)
+                or source.interpretation_version is not None
+            ):
                 raise SourceConflict
-            version = (source.interpretation_version or 0) + 1
+            version = 1
             row = InterpretationRevision(
                 source_id=source.id,
                 version=version,

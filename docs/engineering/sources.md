@@ -21,7 +21,7 @@ Submissions for one athlete serialize on the athlete row, so concurrent submissi
 
 Interpretations are append-only revisions of one source.
 
-- `extraction` revisions are written by worker code through `PostgresExtractionResults`, never through HTTP. Each carries provenance: run ID, provider, model, prompt version, and schema version. A repeated run ID returns the existing revision. Extraction is refused while a source is a pending or discarded duplicate.
+- `extraction` revisions are written by worker code through `PostgresExtractionResults`, never through HTTP. Each carries provenance: run ID, provider, model, prompt version, and schema version. A repeated run ID returns the existing revision, so handlers pass the job ID as the run ID and every retry of one job is idempotent. Only the first extraction of a source is recorded: once a source has an interpretation, a new run ID is refused, so a later run can never displace an earlier result or an athlete's correction. Extraction is also refused while a source is a pending or discarded duplicate.
 - `correction` revisions come from the athlete through `PUT …/interpretation` with `expected_version`. A stale version, a source without an interpretation yet, or a discarded source returns 409. Every correction records the version it was based on.
 - Earlier revisions stay readable with `?version=`.
 

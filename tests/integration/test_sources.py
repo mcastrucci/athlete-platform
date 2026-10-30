@@ -246,8 +246,21 @@ def test_interpretation_revisions_are_append_only(engine: Engine) -> None:
     assert latest.version == 2 and latest.content.sessions[0].items[1].reps == 0
     assert sources.read(aid, source.id).text == TEXT
 
-    rerun = writer.record(source.id, provenance(), InterpretationContent())
-    assert (rerun.version, rerun.based_on_version) == (3, None)
+    with pytest.raises(SourceConflict):
+        writer.record(source.id, provenance(), InterpretationContent())
+    assert sources.interpretation(aid, source.id).version == 2
+    assert writer.record(source.id, run, InterpretationContent()).version == 1
+
+
+def test_a_second_extraction_never_displaces_the_first(engine: Engine) -> None:
+    sources, aid = actor(engine)
+    source, _ = sources.submit(aid, SourceSubmission(idempotency_key="k", text=TEXT))
+    writer = PostgresExtractionResults(build_session_factory(engine))
+    first = writer.record(source.id, provenance(), InterpretationContent.model_validate(CONTENT))
+    with pytest.raises(SourceConflict):
+        writer.record(source.id, provenance(), InterpretationContent())
+    current = sources.interpretation(aid, source.id)
+    assert (current.version, current.content) == (1, first.content)
 
 
 def test_extraction_waits_for_duplicate_decision(engine: Engine) -> None:
