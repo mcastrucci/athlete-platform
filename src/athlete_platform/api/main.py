@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
@@ -20,6 +20,16 @@ from athlete_platform.application.profiles import (
     ProfileSnapshot,
     ProfileUpdate,
 )
+from athlete_platform.application.sources import (
+    DuplicateDecision,
+    InterpretationCorrection,
+    InterpretationSnapshot,
+    SourceConflict,
+    SourceNotFound,
+    Sources,
+    SourceSubmission,
+    SourceView,
+)
 from athlete_platform.config import Settings
 from athlete_platform.domain.identity import IdentityUnavailable, InvalidIdentity, VerifiedIdentity
 from athlete_platform.infrastructure.database import build_engine, build_session_factory
@@ -28,6 +38,7 @@ from athlete_platform.infrastructure.identity import (
     UnconfiguredIdentityVerifier,
 )
 from athlete_platform.infrastructure.profiles import PostgresProfiles
+from athlete_platform.infrastructure.sources import PostgresSources
 
 
 class HealthResponse(BaseModel):
@@ -120,6 +131,73 @@ def create_app(
         repository: Annotated[Profiles, Depends(profiles)],
     ) -> ProfileSnapshot:
         return repository.update(athlete_id, change)
+
+    def sources(principal: Annotated[VerifiedIdentity, Depends(identity)]) -> Sources:
+        if factory is None:
+            raise HTTPException(503, "Database is not configured")
+        return PostgresSources(factory, principal)
+
+    @app.exception_handler(SourceNotFound)
+    async def source_not_found(request: Request, error: SourceNotFound) -> JSONResponse:
+        return JSONResponse(status_code=404, content={"detail": "Source not found"})
+
+    @app.exception_handler(SourceConflict)
+    async def source_conflict(request: Request, error: SourceConflict) -> JSONResponse:
+        return JSONResponse(status_code=409, content={"detail": "Source conflict"})
+
+    @app.post("/v1/athletes/{athlete_id}/sources", response_model=SourceView, status_code=201)
+    def submit_source(
+        athlete_id: UUID,
+        submission: SourceSubmission,
+        response: Response,
+        repository: Annotated[Sources, Depends(sources)],
+    ) -> SourceView:
+        view, created = repository.submit(athlete_id, submission)
+        if not created:
+            response.status_code = 200
+        return view
+
+    @app.get("/v1/athletes/{athlete_id}/sources/{source_id}", response_model=SourceView)
+    def read_source(
+        athlete_id: UUID, source_id: UUID, repository: Annotated[Sources, Depends(sources)]
+    ) -> SourceView:
+        return repository.read(athlete_id, source_id)
+
+    @app.post(
+        "/v1/athletes/{athlete_id}/sources/{source_id}/duplicate-decision",
+        response_model=SourceView,
+    )
+    def decide_duplicate(
+        athlete_id: UUID,
+        source_id: UUID,
+        decision: DuplicateDecision,
+        repository: Annotated[Sources, Depends(sources)],
+    ) -> SourceView:
+        return repository.decide_duplicate(athlete_id, source_id, decision)
+
+    @app.get(
+        "/v1/athletes/{athlete_id}/sources/{source_id}/interpretation",
+        response_model=InterpretationSnapshot,
+    )
+    def read_interpretation(
+        athlete_id: UUID,
+        source_id: UUID,
+        repository: Annotated[Sources, Depends(sources)],
+        version: Annotated[int | None, Query(ge=1)] = None,
+    ) -> InterpretationSnapshot:
+        return repository.interpretation(athlete_id, source_id, version)
+
+    @app.put(
+        "/v1/athletes/{athlete_id}/sources/{source_id}/interpretation",
+        response_model=InterpretationSnapshot,
+    )
+    def correct_interpretation(
+        athlete_id: UUID,
+        source_id: UUID,
+        correction: InterpretationCorrection,
+        repository: Annotated[Sources, Depends(sources)],
+    ) -> InterpretationSnapshot:
+        return repository.correct(athlete_id, source_id, correction)
 
     @app.get("/health/live", response_model=HealthResponse, tags=["operations"])
     def health() -> HealthResponse:
