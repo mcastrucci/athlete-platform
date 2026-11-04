@@ -37,9 +37,34 @@ def test_planned_open_format_counts_reserved_caps() -> None:
     assert unknown == set()
 
 
-def test_planned_open_format_ignores_component_reps_without_caps() -> None:
-    """Mirrors athlete@3f5897c core.py::session_pulls: only caps count for planned metcons."""
-    block = metcon(Component("pull_up", reps=10), rounds=3)
+def test_planned_uncapped_open_format_component_is_unknown_not_zero() -> None:
+    """Intentional difference from athlete@3f5897c core.py::check_constraints.
+
+    The baseline failed an open format without a reserved cap through a separate check ("formato
+    abierto sin tope"); the engine marks the category unknown so an unbounded dose is never zero.
+    """
+    block = metcon(Component("toes_to_bar", reps=8), rounds=3)  # AMRAP, no caps
+    assert session_pulls(session(0, block), CATALOG, logged=False) == ({}, {"hanging_core"})
+
+
+def test_planned_capped_component_counts_its_cap_and_uncapped_sibling_is_unknown() -> None:
+    """Mirrors athlete@3f5897c core.py::session_pulls (caps) with the uncapped-component rule."""
+    capped = metcon(Component("toes_to_bar", reps=8), caps={"toes_to_bar": 24})
+    assert session_pulls(session(0, capped), CATALOG, logged=False) == ({"hanging_core": 24}, set())
+    mixed = metcon(
+        Component("toes_to_bar", reps=8),
+        Component("pull_up", reps=10),  # no cap
+        caps={"toes_to_bar": 24},
+    )
+    assert session_pulls(session(0, mixed), CATALOG, logged=False) == (
+        {"hanging_core": 24},
+        {"vertical_pull"},
+    )
+
+
+def test_planned_uncapped_component_without_a_pull_category_is_ignored() -> None:
+    """Engine contract: only components with a pull category need a reserved cap."""
+    block = metcon(Component("row", reps=500), rounds=3)
     assert session_pulls(session(0, block), CATALOG, logged=False) == ({}, set())
 
 

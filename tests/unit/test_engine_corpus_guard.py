@@ -35,7 +35,7 @@ FORBIDDEN_PATTERNS: dict[str, re.Pattern[str]] = {
         "owner surname": r"\bCastrucci",  # \b spares the mcastrucci account in repository URLs
         # The product repository is mcastrucci/athlete-platform; only the personal one is forbidden.
         "personal repository": r"mcastrucci/athlete(?!-platform)",
-        "local checkout path": r"/home/user/athlete",
+        "local checkout path": r"/home/user/athlete(?!-platform)",
         "scratch directory": r"scratchpad",
     }.items()
 }
@@ -104,6 +104,7 @@ def test_guard_does_not_flag_the_product_repository_or_ordinary_domain_words() -
         "https://github.com/mcastrucci/athlete-platform\n"
         "pull_up, squat, athlete, weighted pull-up, 2030-W10, log/ is a word\n"
         "athlete@3f5897c core.py::session_pulls\n"
+        "cd /home/user/athlete-platform/.claude/worktrees/x\n"
     )
     assert find_forbidden(clean) == []
 

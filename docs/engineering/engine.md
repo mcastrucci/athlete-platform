@@ -40,10 +40,10 @@ Quantities are typed `float | None` but validated at run time with `valid_count`
 
 - `None` means not reported. A missing or invalid dose is unknown and never zero. Only `completed_reps=0` is a confirmed zero.
 - Invalid quantities (negative, boolean, NaN, infinite) are reported as unknown instead of raising. They never reduce a total. `quantity_errors(session)` lists them so a caller can reject them at the boundary.
-- Plan: `sets x reps` of pull blocks plus the reserved `caps` of open formats. Conditional components are not planned exposure.
+- Plan: `sets x reps` of pull blocks plus the reserved `caps` of open formats. Conditional components are not planned exposure. A non-conditional component with a pull category that is not listed in `caps` is an unbounded dose and makes its category unknown.
 - Log: performed set lists, and for metcon components `completed_reps` if reported, else complete `rounds x reps per round`. A conditional component without `completed_reps` was not done and is not unknown. Reserved `caps` are a plan-only reservation.
-- Weekly totals cover sessions dated in `[week_start, week_end]`, each on its own basis.
-- Rolling window: any 7 days ending on a day from `week_start` to `week_end`. Performed sessions up to six days before the week and any session in the week contribute; planned sessions before the week never happened and are ignored. The result is the maximum known total, its end date (earliest on ties), and the days from six days before the week to its end with unknown dose.
+- Each date counts once. Inside the week, a date with a performed session uses the log and ignores that date's planned sessions (the log replaces the plan, even when it differs); a date with only plan uses the plan. Performed sessions before the week count as logged; planned sessions before the week never happened and are ignored. Weekly totals and rolling windows share this selection.
+- Rolling window: any 7 days ending on a day from `week_start` to `week_end`. Performed sessions up to six days before the week and the per-date selection above inside the week contribute. The result is the maximum known total, its end date (earliest on ties), and the days from six days before the week to its end with unknown dose.
 - Evaluation returns one `weekly` result per (constraint id, category), then one `rolling` result per (constraint id, category) when days before the week add to the worst window or any dose is unknown. Constraints sharing a category get separate results with their own id and cap.
 - Status: `fail` when the known total exceeds the cap (unknown doses can only add to it); otherwise `manual` when any dose is unknown, because an unknown dose cannot certify a cap; otherwise `ok`. The cap itself is allowed.
 - Nothing reads the wall clock. Week bounds are arguments; `week_end` before `week_start` raises `ValueError`.
@@ -51,10 +51,10 @@ Quantities are typed `float | None` but validated at run time with `valid_count`
 ## Intentional differences from the baseline
 
 1. `rep_count` returns `None` for a logged set list containing a set without reps (the baseline raised `KeyError`; a later personal fix returns unknown). It also returns `None` for invalid reps, which the baseline summed as they were.
-2. A planned pull block without a complete structured dose, or with an invalid reserved cap, makes its category unknown. The baseline added zero and relied on a separate plan check ("no structured dose") to fail the plan. The plan-integrity checks were not extracted, so the engine does not silently treat the gap as zero.
+2. A planned pull block without a complete structured dose, with an invalid reserved cap, or a planned non-conditional pull component without a reserved cap (an open format such as an AMRAP) makes its category unknown. The baseline added zero and relied on separate plan checks ("no structured dose", "open format without cap") to fail the plan. The plan-integrity checks were not extracted, so the engine does not silently treat the gap as zero.
 3. The weekly result can be `manual` for an unknown dose inside the week. The baseline's weekly row compared only the known total.
 4. `completed_reps=None` means not reported. The baseline treated an explicit null the same as an invalid value (unknown) unless the key was absent.
-5. Performed sessions inside the evaluated week count as logged. The baseline had only logs before the week and the plan inside it.
+5. Inside the evaluated week, a date with a performed session uses the log instead of the plan, so a plan and its log are never added together. The baseline had only logs before the week and the plan inside it.
 6. Display strings are not ported. Results are structured; detail messages are English and dates are ISO 8601.
 7. The manual-review override of the baseline (a reviewed note turning a manual row into ok) is not part of this slice. Persisted reviews belong to the application layer.
 
@@ -69,6 +69,8 @@ Synthetic tests live in `tests/unit/engine/`. Baseline test files are in `tests/
 | `test_rolling_evaluation::test_confirmed_zero_is_not_unknown` | `test_plan.py::test_ventana_movil_cero_confirmado_no_es_desconocido` |
 | `test_rolling_evaluation::test_negative_quantity_does_not_subtract_work` | `test_plan.py::test_cantidad_negativa_no_resta_y_se_rechaza` |
 | `test_rolling_evaluation::test_constraints_sharing_a_category_get_separate_results` | `test_plan.py::test_ventana_movil_por_restriccion_con_revision_parcial` |
+| `test_rolling_evaluation::test_same_day_plan_and_log_count_once`, `test_log_only_and_plan_only_dates_*`, `test_performed_session_with_unknown_dose_*` | none (intentional difference 5) |
+| `test_session_pulls::test_planned_uncapped_*`, `test_rolling_evaluation::test_planned_uncapped_open_format_makes_the_week_manual` | none (intentional difference 2) |
 | `test_rolling_evaluation::test_no_prior_records_adds_no_rolling_row` | `test_plan.py::test_ventana_movil_sin_registros_previos_no_agrega_filas` |
 | `test_rolling_evaluation::test_planned_open_format_caps_count_against_the_weekly_cap` | `test_plan.py::test_tope_de_toes_to_bar_superado` |
 | `test_dose_helpers::test_rep_count_sums_a_set_list_and_set_count_counts_records` | `test_regressions.py::test_actual_sets_list_counts_reps_and_sets` |

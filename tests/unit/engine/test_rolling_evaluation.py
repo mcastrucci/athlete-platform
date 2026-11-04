@@ -307,3 +307,70 @@ def test_evaluation_is_pure_and_independent_of_the_wall_clock() -> None:
         ].status
         == "ok"
     )
+
+
+def test_same_day_plan_and_log_count_once() -> None:
+    """Engine extension over athlete@3f5897c (the baseline used only the plan inside the week).
+
+    The log replaces the plan for its date; the two are never added together.
+    """
+    plan = session(2, planned("pull_up", 3, 4))
+    log = session(2, logged("pull_up", 4, 4, 4), performed=True)
+    for sessions in ([plan, log], [log, plan]):
+        totals = weekly_pulls(sessions, CATALOG, week_start=WEEK_START, week_end=WEEK_END)
+        assert totals.known == {"vertical_pull": 12}  # 3 x 4 once, not 12 + 12
+        rolling = rolling_pulls(sessions, CATALOG, [K1], week_start=WEEK_START, week_end=WEEK_END)
+        assert rolling["vertical_pull"] == RollingPull(12, day(2), ())
+        assert [(r.kind, r.value, r.status) for r in evaluate(sessions)] == [("weekly", 12, "ok")]
+
+
+def test_the_log_replaces_the_plan_even_when_it_differs() -> None:
+    """Engine extension: what was performed wins over what was planned for that date."""
+    plan = session(2, planned("pull_up", 3, 4))  # 12 planned
+    log = session(2, logged("pull_up", 4, 4), performed=True)  # 8 performed
+    totals = weekly_pulls([plan, log], CATALOG, week_start=WEEK_START, week_end=WEEK_END)
+    assert totals.known == {"vertical_pull": 8}
+
+
+def test_log_only_and_plan_only_dates_in_the_same_week_both_count() -> None:
+    """Engine extension: each date uses its log if it has one, else its plan."""
+    sessions = [
+        session(0, logged("pull_up", 8, 8), performed=True),  # log-only date: 16
+        session(3, planned("pull_up", 3, 5)),  # plan-only date: 15
+        session(5, planned("pull_up", 2, 5)),  # plan replaced by the log below
+        session(5, logged("pull_up", 5), performed=True),  # 5
+    ]
+    totals = weekly_pulls(sessions, CATALOG, week_start=WEEK_START, week_end=WEEK_END)
+    assert totals.known == {"vertical_pull": 36}  # 16 + 15 + 5
+    rolling = rolling_pulls(sessions, CATALOG, [K1], week_start=WEEK_START, week_end=WEEK_END)
+    assert rolling["vertical_pull"].value == 36  # one window ending Sunday spans the whole week
+
+
+def test_performed_session_with_unknown_dose_replaces_the_plan_and_makes_it_manual() -> None:
+    """Engine extension: an unknown log is not backfilled from the plan for that date."""
+    sessions = [
+        session(2, planned("pull_up", 3, 4)),  # 12 planned
+        session(2, Block("pull_up"), performed=True),  # performed, dose not recorded
+    ]
+    results = evaluate(sessions)
+    assert [(r.kind, r.value, r.status, r.unknown_dates) for r in results] == [
+        ("weekly", 0, "manual", (day(2),)),
+        ("rolling", 0, "manual", (day(2),)),
+    ]
+
+
+def test_planned_uncapped_open_format_makes_the_week_manual() -> None:
+    """Intentional difference from athlete@3f5897c core.py::check_constraints ("open format
+    without cap" was a separate failing check).
+    """
+    capped = PullConstraint("K-1", {"hanging_core": 60})
+    uncapped_block = metcon(Component("toes_to_bar", reps=8), rounds=3)
+    results = evaluate([session(2, uncapped_block)], capped)
+    assert [(r.kind, r.value, r.status) for r in results] == [
+        ("weekly", 0, "manual"),
+        ("rolling", 0, "manual"),
+    ]
+    reserved = metcon(Component("toes_to_bar", reps=8), caps={"toes_to_bar": 24})
+    assert [(r.value, r.status) for r in evaluate([session(2, reserved)], capped)] == [(24, "ok")]
+    conditional = metcon(Component("toes_to_bar", reps=8, conditional=True))
+    assert [(r.value, r.status) for r in evaluate([session(2, conditional)], capped)] == [(0, "ok")]

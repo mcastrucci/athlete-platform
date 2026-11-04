@@ -155,9 +155,11 @@ def session_pulls(
     complete rounds x reps per round. A conditional component without reported reps was not done.
     Missing or invalid data is never invented or subtracted: the category becomes unknown.
 
-    Intentional difference from athlete@3f5897c: a planned block whose dose is incomplete (no
+    Intentional differences from athlete@3f5897c: a planned block whose dose is incomplete (no
     structured sets and reps, or an invalid reserved cap) makes its category unknown instead of
-    adding zero. The baseline relied on a separate plan check to fail such blocks.
+    adding zero, and so does a planned non-conditional component with a pull category that has no
+    reserved cap (an unbounded open format). The baseline relied on separate plan checks to fail
+    such blocks.
     """
     known: dict[str, float] = {}
     unknown: set[str] = set()
@@ -182,6 +184,14 @@ def session_pulls(
                     add(cap_category, cap)
                 else:
                     unknown.add(cap_category)
+            for planned_component in block.components:
+                uncapped_category = _category(catalog, planned_component.exercise)
+                if (
+                    uncapped_category
+                    and not planned_component.conditional
+                    and planned_component.exercise not in block.caps
+                ):
+                    unknown.add(uncapped_category)  # an open format without a reserved cap
             continue
         for component_ in block.components:
             component_category = _category(catalog, component_.exercise)
@@ -232,24 +242,30 @@ def _daily(
     return daily, unknown
 
 
-def _relevant(
+def _select_sessions(
     sessions: Iterable[Session],
+    *,
     first: datetime.date,
     week_start: datetime.date,
     week_end: datetime.date,
 ) -> list[Session]:
-    """Select performed sessions from ``first`` up to the week's end and planned sessions in it.
+    """Select the sessions that make up the evaluated span, counting each day once.
 
-    A planned session before the week never happened and is ignored. A performed session inside
-    the week counts as logged.
+    Performed sessions dated from ``first`` to ``week_end`` are kept. Planned sessions are kept
+    only inside the week and only on dates without a performed session: the log replaces the plan
+    for that day, so a planned session and its log are never added together. A planned session
+    before the week never happened and is ignored.
+
+    Extension over athlete@3f5897c, which used only the plan inside the week.
     """
-    selected: list[Session] = []
-    for session in sessions:
-        if session.performed and first <= session.date <= week_end:
-            selected.append(session)
-        elif not session.performed and week_start <= session.date <= week_end:
-            selected.append(session)
-    return selected
+    performed = [s for s in sessions if s.performed and first <= s.date <= week_end]
+    logged_days = {s.date for s in performed}
+    planned = [
+        s
+        for s in sessions
+        if not s.performed and week_start <= s.date <= week_end and s.date not in logged_days
+    ]
+    return performed + planned
 
 
 def weekly_pulls(
@@ -261,10 +277,11 @@ def weekly_pulls(
 ) -> PullTotals:
     """Total pull reps per category over the sessions dated inside ``[week_start, week_end]``.
 
-    Each session counts on its own basis: planned if not performed, logged if performed.
+    Each date counts once: a date with a performed session uses the log and ignores that date's
+    planned sessions; a date with only plan uses the plan.
     """
     _check_week(week_start, week_end)
-    inside = [s for s in sessions if week_start <= s.date <= week_end]
+    inside = _select_sessions(sessions, first=week_start, week_start=week_start, week_end=week_end)
     daily, unknown = _daily(inside, catalog)
     totals: dict[str, float] = {}
     for per_category in daily.values():
@@ -300,13 +317,14 @@ def rolling_pulls(
 ) -> dict[str, RollingPull]:
     """Return, per regulated category, the maximum pull reps in any 7-day window ending in the week.
 
-    Performed sessions before the week contribute what was logged; sessions inside the week
-    contribute their plan (or their log if already performed). A window is the 7 days ending on a
-    day from ``week_start`` to ``week_end``.
+    Performed sessions before the week contribute what was logged; each day inside the week
+    contributes its log if it has a performed session, else its plan. A window is the 7 days
+    ending on a day from ``week_start`` to ``week_end``.
     """
     _check_week(week_start, week_end)
     first = week_start - datetime.timedelta(days=WINDOW_DAYS - 1)
-    daily, unknown = _daily(_relevant(sessions, first, week_start, week_end), catalog)
+    selected = _select_sessions(sessions, first=first, week_start=week_start, week_end=week_end)
+    daily, unknown = _daily(selected, catalog)
     regulated = {cat for c in pull_constraints(constraints) for cat in c.weekly_caps}
     result: dict[str, RollingPull] = {}
     for category in regulated:
