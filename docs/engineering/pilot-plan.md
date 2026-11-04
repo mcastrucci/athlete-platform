@@ -174,6 +174,8 @@ Do not port filesystem layout, YAML paths as references, CSV-shaped string contr
 
 Extract one reusable engine package within this repository, with a compatibility adapter for the old read contract where useful. Add write-oriented application repositories and transaction boundaries rather than extending the old generic reader into the entire product API.
 
+The first extracted slice, the pull-budget engine (weekly and rolling 7-day volume with unknown-dose handling), is documented in [engine.md](engine.md).
+
 Validate behavior with synthetic parity cases for rolling volume, unknown dose, partial sessions, dated observations, constraints, and timezone handling. Translate copied code, comments, and test descriptions into English.
 
 Before production use, publish a versioned engine artifact and migrate the personal repository to consume a pinned release through a separate PR there. Avoid maintaining two evolving engine implementations. Extraction and consumer migration must name the source commit and release version; no automatic migration of personal data.
