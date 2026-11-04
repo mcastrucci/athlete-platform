@@ -34,7 +34,7 @@ Active capacity is checked under an athlete lock for both enqueue and manual ret
 
 Retries use bounded exponential backoff with jitter. Terminal errors persist a controlled code without exception text or private payloads. Input and result JSON are limited to 64 KiB and reject non-finite values. This does not define file-upload limits or model token budgets.
 
-The runner drains at most max_jobs and checks a monotonic runtime budget between jobs, then exits without idle polling. Handlers receive a lease-renewal callback, must check renewal success, bound their own calls, and renew before expiry. The runner cannot interrupt an in-flight Python function. The default CLI deliberately has no handler; it does not claim work and leave it stranded.
+The runner drains at most max_jobs and checks a monotonic runtime budget between jobs, then exits without idle polling. Handlers receive a lease-renewal callback, must check renewal success, bound their own calls, and renew before expiry. The runner cannot interrupt an in-flight Python function. The CLI claims work only when an extraction provider is configured; otherwise it has no handler and does not claim work and leave it stranded.
 
 Cloud Run launch and scheduled recovery are not provisioned here. A later integration must arrange wakeups for due retries and expired leases; otherwise persisted work simply waits. Claim bounds housekeeping to 100 deferred/exhausted candidates per call, so large backlogs may require another worker execution.
 

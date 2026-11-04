@@ -5,6 +5,7 @@ from sqlalchemy import create_engine, pool
 
 from athlete_platform.config import Settings
 from athlete_platform.infrastructure import (
+    budget_models,  # noqa: F401
     job_models,  # noqa: F401
     models,  # noqa: F401
     source_models,  # noqa: F401

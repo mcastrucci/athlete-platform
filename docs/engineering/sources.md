@@ -1,6 +1,6 @@
 # Text sources and interpretations
 
-Date: 2026-10-30. First slice of [issue #6](https://github.com/mcastrucci/athlete-platform/issues/6), after the queue in #11. The second slice adds extraction enqueueing and a worker handler behind a provider-neutral contract. There is still no model provider (tests use a fake extractor), confirmation, or canonical sessions.
+Date: 2026-10-30. First slice of [issue #6](https://github.com/mcastrucci/athlete-platform/issues/6), after the queue in #11. The second slice adds extraction enqueueing and a worker handler behind a provider-neutral contract, and the third connects the Anthropic adapter with a monthly budget gate. There is still no confirmation or canonical sessions. Tests use fake extractors and clients; no real model is called.
 
 ## Sources
 
@@ -22,20 +22,20 @@ Submissions for one athlete serialize on the athlete row, so concurrent submissi
 Enqueue and state:
 
 - After a submission commits, a source whose duplicate status is `none` or `kept` gets the queue job `extract-source:{source_id}` with payload `{"source_id": …}`. This runs on every submit call that returns the source, including idempotent replays, so a lost enqueue heals when the client retries. Queue idempotency (athlete, key, payload hash) makes repeats return the same job. A `keep` decision, including a repeated one, enqueues the same way. Pending and discarded duplicates never enqueue.
-- `SourceView.extraction` is `{job_id, state, error_code}` read from that job, or `null` when no job exists. `state` is a queue state (`queued`, `running`, `deferred`, `succeeded`, `failed`).
+- `SourceView.extraction` is `{job_id, state, error_code}` read from that job, or `null` when no job exists. `state` is a queue state (`queued`, `running`, `deferred`, `succeeded`, `failed`). A failed job reports its code in `error_code`: `invalid_output`, `handler_error` (including a provider configuration error), `attempt_limit`, or `budget_exhausted`, which means the month's model budget had no room for the call. Nothing was sent to the provider, and the job is not retried automatically. An explicit retry runs it again, and it is blocked again until the budget allows it (next UTC month, or a higher configured budget).
 - `QueueFull` never loses or rolls back the stored source. The enqueue happens after the source commits, and the response carries `{job_id: null, state: "not_queued", error_code: "queue_full"}`. That marker appears only on the submit (or keep) response; a later read shows `null`. Repeating the same submission enqueues once capacity returns.
 
-The `Extractor` contract (`application/extraction.py`) takes an `ExtractionRequest` (source ID, text, athlete timezone) and returns an `ExtractionOutput` (interpretation content, provider/model usage, prompt version). It raises `TransientExtractionError` or `InvalidExtractionOutput`.
+The `Extractor` contract (`application/extraction.py`) takes an `ExtractionRequest` (source ID, text, athlete timezone) and returns an `ExtractionOutput` (interpretation content, provider/model usage, prompt version). It raises `TransientExtractionError`, `InvalidExtractionOutput`, or `ExtractionConfigurationError` (terminal).
 
-Handler (`worker/extraction.py`, `extraction_handler(factory, extractor)`), per lease:
+Handler (`worker/extraction.py`, `extraction_handler(factory, extractor, budget=None)`), per lease:
 
 1. Read `source_id` from the payload and load the source scoped to the leased job's athlete. A malformed, missing, or foreign source fails the job terminally (`handler_error`) without a write.
 2. If this job already recorded a revision, return its version (duplicate delivery and reclaim are idempotent). A pending or discarded duplicate, or a source interpreted by another run, fails terminally without a write.
-3. Renew the lease before the provider call and again before writing; a lost lease stops without a write. No database transaction is open during the provider call.
-4. A transient extractor error defers the job with queue backoff. Invalid output (`InvalidExtractionOutput`, or content failing `InterpretationContent` validation) is `invalid_output`: retried once when it happens on attempt 1, terminal afterwards. Attempts after the first never retry invalid output, even if the job was retried manually.
+3. With a budget gate, reserve the worst-case cost (a full budget fails the job as `budget_exhausted` with no call). Renew the lease before the provider call and again before writing; a lost lease stops without a write. No database transaction is open during the provider call.
+4. After the call, reconcile the reservation with the reported usage, then validate. A transient extractor error defers the job with queue backoff. Invalid output (`InvalidExtractionOutput`, or content failing `InterpretationContent` validation) is `invalid_output`: retried once when it happens on attempt 1, terminal afterwards. Attempts after the first never retry invalid output, even if the job was retried manually.
 5. Record through `PostgresExtractionResults.record` with the job ID as run ID and return `{"interpretation_version": n}`.
 
-The default worker still configures no handler; wiring a real provider is a later slice.
+The worker CLI builds this handler when `ATHLETE_EXTRACTION_PROVIDER=anthropic`, the API key, and a database URL are configured (see the [model and budget decisions](auth-and-extraction-model.md#implementation-note-issue-6-slice-2b)); otherwise it exits without polling.
 
 ## Interpretations
 
@@ -61,5 +61,4 @@ All paths are under `/v1/athletes/{athlete_id}` and require the caller to own th
 
 ## Next slices in #6
 
-1. Add the Anthropic adapter behind the extraction contract, with the budget gate, and configure it in the worker (usage is returned by the contract but not yet stored).
-2. Confirmation that materializes canonical sessions transactionally, with stale-confirmation conflicts.
+1. Confirmation that materializes canonical sessions transactionally, with stale-confirmation conflicts.
