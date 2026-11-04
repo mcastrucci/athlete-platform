@@ -37,6 +37,7 @@ from athlete_platform.infrastructure.identity import (
     JWTIdentityVerifier,
     UnconfiguredIdentityVerifier,
 )
+from athlete_platform.infrastructure.jobs import PostgresJobs
 from athlete_platform.infrastructure.profiles import PostgresProfiles
 from athlete_platform.infrastructure.sources import PostgresSources
 
@@ -135,7 +136,7 @@ def create_app(
     def sources(principal: Annotated[VerifiedIdentity, Depends(identity)]) -> Sources:
         if factory is None:
             raise HTTPException(503, "Database is not configured")
-        return PostgresSources(factory, principal)
+        return PostgresSources(factory, principal, PostgresJobs(factory))
 
     @app.exception_handler(SourceNotFound)
     async def source_not_found(request: Request, error: SourceNotFound) -> JSONResponse:

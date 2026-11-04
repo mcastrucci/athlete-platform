@@ -40,6 +40,18 @@ class DuplicateDecision(Contract):
     decision: Literal["keep", "discard"]
 
 
+class ExtractionStatus(Contract):
+    """Extraction state of a source, read from its queue job.
+
+    `not_queued` means no job exists although one is wanted; `error_code` then says why
+    (`queue_full`). Repeating the same submission enqueues again.
+    """
+
+    job_id: UUID | None
+    state: Literal["queued", "running", "deferred", "succeeded", "failed", "not_queued"]
+    error_code: str | None
+
+
 class SourceView(Contract):
     id: UUID
     athlete_id: UUID
@@ -49,6 +61,8 @@ class SourceView(Contract):
     duplicate_of: UUID | None
     duplicate_status: DuplicateStatus
     interpretation_version: int | None
+    # None: no extraction job (pending or discarded duplicate, or none created yet).
+    extraction: ExtractionStatus | None = None
 
 
 class Quantity(Contract):
