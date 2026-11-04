@@ -83,7 +83,7 @@ def test_unconfigured_worker_does_not_build_anything() -> None:
 
 def test_provider_without_database_fails_closed() -> None:
     recorder = Recorder()
-    settings = Settings(extraction_provider="anthropic", anthropic_api_key=KEY)
+    settings = Settings(extraction_provider="anthropic", anthropic_api_key=KEY, database_url=None)
     assert main(settings, client_factory=recorder.client_factory, runner=recorder.runner) == 1
     assert recorder.keys == [] and recorder.runs == []
 
