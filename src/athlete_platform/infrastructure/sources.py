@@ -28,6 +28,7 @@ from athlete_platform.infrastructure.database import transaction
 from athlete_platform.infrastructure.job_models import ExtractionJob
 from athlete_platform.infrastructure.jobs import PostgresJobs
 from athlete_platform.infrastructure.models import Athlete, ProfileRevision, User
+from athlete_platform.infrastructure.session_models import SourceConfirmation
 from athlete_platform.infrastructure.source_models import InterpretationRevision, Source
 
 IDEMPOTENCY_CONSTRAINT = "uq_sources_athlete_id"
@@ -260,10 +261,13 @@ class PostgresSources:
         self, athlete_id: UUID, source_id: UUID, correction: InterpretationCorrection
     ) -> InterpretationSnapshot:
         with transaction(self.factory) as session:
+            # The same source row lock serializes this with confirmation, which checks the
+            # latest version under it; a confirmed source is final, so it is refused here.
             source = self._source(session, athlete_id, source_id, lock=True)
             if (
                 source.duplicate_status == DuplicateStatus.DISCARDED
                 or source.interpretation_version != correction.expected_version
+                or session.get(SourceConfirmation, source.id) is not None
             ):
                 raise SourceConflict
             version = correction.expected_version + 1

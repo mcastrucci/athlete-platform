@@ -8,6 +8,7 @@ from athlete_platform.infrastructure import (
     budget_models,  # noqa: F401
     job_models,  # noqa: F401
     models,  # noqa: F401
+    session_models,  # noqa: F401
     source_models,  # noqa: F401
 )
 from athlete_platform.infrastructure.database import Base
