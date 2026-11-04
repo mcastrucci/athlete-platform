@@ -83,10 +83,12 @@ class Reservation(BaseModel):
 
 class BudgetGate(Protocol):
     def reserve(self, job_id: UUID, *, provider: str, model: str, usd: Decimal) -> Reservation:
-        """Hold `usd` for this job in the current UTC month, replacing the job's own hold.
+        """Hold `usd` for this job in the current UTC month.
 
-        Raises BudgetExhausted when spent + held amounts of all jobs, including this hold,
-        would exceed the monthly budget. Safe to repeat for the same job.
+        A hold the job still has outstanding is kept as an uncertain amount (its call may have
+        been billed), never discarded. Raises BudgetExhausted when spent + held + uncertain
+        amounts of all jobs, including this hold, would exceed the monthly budget; the
+        previous hold stays counted in that case too.
         """
         ...
 

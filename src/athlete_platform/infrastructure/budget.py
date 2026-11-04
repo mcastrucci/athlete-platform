@@ -6,15 +6,18 @@ Each operation is one short transaction; none is open during a provider call.
 
 Semantics per (job, month) entry:
 
-- `reserve` replaces the job's outstanding hold by the new estimate. A retry of the same job
-  therefore reuses its own hold instead of adding another one. Amounts already spent by the
-  job's earlier reconciled calls still count.
-- `reconcile` adds the cost of the reported usage to `spent_usd` and clears the hold. With no
-  outstanding hold it does nothing, so repeating it cannot double-count.
-- `release` clears the hold. The caller may use it only when the provider is known not to have
-  processed the request. After a timeout or connection error the hold is kept: the call may
-  have been billed, and the hold keeps that worst case counted until a later attempt of the
-  same job replaces it.
+- `reserve` places a new hold. A hold the job still has outstanding (its earlier call ended
+  uncertain: timeout, connection error, 5xx) is moved into `uncertain_usd` first, never
+  discarded, because that call may have been billed. The move is committed even when the new
+  hold is refused. Amounts the job already spent also count, so a retry costs its new hold
+  plus everything the job may already have cost.
+- `reconcile` settles only the current hold: it adds the cost of the reported usage to
+  `spent_usd` and clears the hold. With no outstanding hold it does nothing, so repeating it
+  cannot double-count.
+- `release` clears only the current hold. The caller may use it only when the provider is
+  known not to have processed the request.
+- Uncertain amounts are never released automatically. An operator can review `model_spend`
+  rows with `uncertain_usd > 0` against the provider's usage report and lower them by hand.
 """
 
 import logging
@@ -73,7 +76,10 @@ class PostgresBudget:
         self, session: Session, month: date, *, excluding: UUID | None = None
     ) -> Decimal:
         query = select(
-            func.coalesce(func.sum(ModelSpend.reserved_usd + ModelSpend.spent_usd), 0)
+            func.coalesce(
+                func.sum(ModelSpend.reserved_usd + ModelSpend.spent_usd + ModelSpend.uncertain_usd),
+                0,
+            )
         ).where(ModelSpend.month == month)
         if excluding is not None:
             query = query.where(ModelSpend.job_id != excluding)
@@ -93,36 +99,49 @@ class PostgresBudget:
 
     def reserve(self, job_id: UUID, *, provider: str, model: str, usd: Decimal) -> Reservation:
         month = month_start(self.clock())
+        exhausted = False
         with transaction(self.factory) as session:
             self._lock(session, month)
             others = self._committed(session, month, excluding=job_id)
             entry = session.get(ModelSpend, (job_id, month))
-            own_spent = entry.spent_usd if entry is not None else Decimal(0)
-            own_held = entry.reserved_usd if entry is not None else Decimal(0)
-            before = others + own_spent + own_held
-            after = others + own_spent + usd
+            spent = entry.spent_usd if entry is not None else Decimal(0)
+            uncertain = entry.uncertain_usd if entry is not None else Decimal(0)
+            previous = entry.reserved_usd if entry is not None else Decimal(0)
+            before = others + spent + uncertain + previous
+            # The previous hold stays counted as uncertain whether or not the new one fits.
+            after = before + usd
             if after > self.monthly_budget_usd:
-                raise BudgetExhausted
+                exhausted = True
             if entry is None:
-                session.add(
-                    ModelSpend(
-                        job_id=job_id,
-                        month=month,
-                        provider=provider,
-                        model=model,
-                        reserved_usd=usd,
-                        spent_usd=Decimal(0),
-                        input_tokens=0,
-                        output_tokens=0,
+                if not exhausted:
+                    session.add(
+                        ModelSpend(
+                            job_id=job_id,
+                            month=month,
+                            provider=provider,
+                            model=model,
+                            reserved_usd=usd,
+                            spent_usd=Decimal(0),
+                            uncertain_usd=Decimal(0),
+                            input_tokens=0,
+                            output_tokens=0,
+                        )
                     )
-                )
             else:
                 session.execute(
                     update(ModelSpend)
                     .where(ModelSpend.job_id == job_id, ModelSpend.month == month)
-                    .values(provider=provider, model=model, reserved_usd=usd, updated_at=func.now())
+                    .values(
+                        provider=provider,
+                        model=model,
+                        uncertain_usd=uncertain + previous,
+                        reserved_usd=Decimal(0) if exhausted else usd,
+                        updated_at=func.now(),
+                    )
                 )
             session.flush()
+        if exhausted:
+            raise BudgetExhausted
         self._warn(month, before, after)
         return Reservation(job_id=job_id, month=month, reserved_usd=usd)
 
@@ -164,6 +183,22 @@ class PostgresBudget:
                 )
                 .values(reserved_usd=0, updated_at=func.now())
             )
+
+    def uncertain_usd(self, month: date) -> Decimal:
+        """Holds superseded by a later attempt before reconciliation; for operators and tests."""
+        with transaction(self.factory) as session:
+            return Decimal(
+                session.execute(
+                    select(func.coalesce(func.sum(ModelSpend.uncertain_usd), 0)).where(
+                        ModelSpend.month == month
+                    )
+                ).scalar_one()
+            )
+
+    def committed_usd(self, month: date) -> Decimal:
+        """Spent + held + uncertain for a UTC month: the amount counted against the budget."""
+        with transaction(self.factory) as session:
+            return self._committed(session, month)
 
     def month_totals(self, month: date) -> tuple[Decimal, Decimal]:
         """Return (spent_usd, reserved_usd) for a UTC month; for operators and tests."""

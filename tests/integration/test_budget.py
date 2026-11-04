@@ -144,21 +144,65 @@ def test_release_drops_only_the_hold(engine: Engine) -> None:
     assert subject.month_totals(NOVEMBER) == (Decimal(0), Decimal(0))
 
 
-def test_a_retry_of_the_same_job_reuses_its_reservation(engine: Engine) -> None:
+def test_a_retry_keeps_the_possibly_billed_hold_as_uncertain(engine: Engine) -> None:
+    subject = gate(engine, "2.00")
+    job = reserve(subject, "0.700000")  # first call times out: the hold stays
+    held = subject.reserve(job, provider="anthropic", model=MODEL, usd=Decimal("0.500000"))
+    assert subject.uncertain_usd(NOVEMBER) == Decimal("0.700000")
+    assert subject.month_totals(NOVEMBER) == (Decimal(0), Decimal("0.500000"))
+    assert subject.committed_usd(NOVEMBER) == Decimal("1.200000")
+    subject.reconcile(held, usage())  # the retry's actual cost replaces only its own hold
+    actual = cost_usd(MODEL, 1000, 100)
+    assert subject.uncertain_usd(NOVEMBER) == Decimal("0.700000")
+    assert subject.committed_usd(NOVEMBER) == Decimal("0.700000") + actual
+    subject.reconcile(held, usage())  # repeating changes nothing
+    assert subject.committed_usd(NOVEMBER) == Decimal("0.700000") + actual
+    # release clears only the current hold, never an uncertain amount.
+    again = subject.reserve(job, provider="anthropic", model=MODEL, usd=Decimal("0.1"))
+    subject.release(again)
+    assert subject.uncertain_usd(NOVEMBER) == Decimal("0.700000")
+    assert subject.committed_usd(NOVEMBER) == Decimal("0.700000") + actual
+
+
+def test_exhaustion_counts_uncertain_and_settled_amounts(engine: Engine) -> None:
     subject = gate(engine, "1.00")
-    job = reserve(subject, "0.700000")
-    reserve(subject, "0.700000", job)  # second attempt of the same job: no second hold
-    reserve(subject, "0.800000", job)  # an estimate may change; it replaces, never adds
-    assert subject.month_totals(NOVEMBER) == (Decimal(0), Decimal("0.800000"))
+    job = reserve(subject, "0.400000")
+    reserve(subject, "0.200000", job)  # 0.4 uncertain + 0.2 held
+    assert subject.committed_usd(NOVEMBER) == Decimal("0.600000")
     with pytest.raises(BudgetExhausted):
-        reserve(subject, "0.300000")
-    # Spend already settled by the job's earlier call still counts when it reserves again.
-    held = subject.reserve(job, provider="anthropic", model=MODEL, usd=Decimal("0.5"))
-    subject.reconcile(held, usage(1_000_000, 1_000_000))  # USD 0.60
-    subject.reserve(job, provider="anthropic", model=MODEL, usd=Decimal("0.4"))
-    assert subject.month_totals(NOVEMBER) == (Decimal("0.6"), Decimal("0.4"))
+        reserve(subject, "0.400001")  # another job: 0.6 + 0.400001 > 1.00
+    reserve(subject, "0.400000")  # exactly fits
+    # A third attempt of the first job: 0.2 more becomes uncertain, so 0.4 + 0.2 + 0.2 held
+    # plus the other job's 0.4 would reach 1.2 and is refused.
     with pytest.raises(BudgetExhausted):
-        subject.reserve(job, provider="anthropic", model=MODEL, usd=Decimal("0.400001"))
+        reserve(subject, "0.200000", job)
+    # The refusal still kept the previous hold as uncertain rather than dropping it.
+    assert subject.uncertain_usd(NOVEMBER) == Decimal("0.600000")
+    assert subject.month_totals(NOVEMBER) == (Decimal(0), Decimal("0.400000"))
+    assert subject.committed_usd(NOVEMBER) == Decimal("1.000000")
+
+
+def test_concurrent_reserves_of_one_job_never_lose_a_hold(
+    engine: Engine, database_url: str
+) -> None:
+    big = build_engine(Settings(database_url=SecretStr(database_url), database_pool_size=8))
+    try:
+        subject = gate(big, "10.00")
+        job = uuid4()
+        barrier = Barrier(8)
+
+        def attempt() -> None:
+            barrier.wait(timeout=10)
+            subject.reserve(job, provider="anthropic", model=MODEL, usd=Decimal("0.5"))
+
+        with ThreadPoolExecutor(8) as pool:
+            for future in [pool.submit(attempt) for _ in range(8)]:
+                future.result(timeout=30)
+        assert subject.month_totals(NOVEMBER) == (Decimal(0), Decimal("0.5"))
+        assert subject.uncertain_usd(NOVEMBER) == Decimal("3.5")
+        assert subject.committed_usd(NOVEMBER) == Decimal("4.0")
+    finally:
+        big.dispose()
 
 
 def test_months_are_utc_calendar_months(engine: Engine) -> None:
@@ -191,9 +235,9 @@ def test_warnings_are_logged_when_spend_crosses_fifty_and_eighty_percent(
     assert [r.getMessage().split(" for ")[0] for r in caplog.records] == ["Model budget passed 50%"]
     reserve(subject, "2.000000")  # 70%: nothing new
     assert len(caplog.records) == 1
-    job = reserve(subject, "1.500000")  # 85%: crosses 80%
-    assert len(caplog.records) == 2 and "80%" in caplog.records[1].getMessage()
-    subject.release(subject.reserve(job, provider="anthropic", model=MODEL, usd=Decimal("1.5")))
+    held = subject.reserve(uuid4(), provider="anthropic", model=MODEL, usd=Decimal("1.5"))
+    assert len(caplog.records) == 2 and "80%" in caplog.records[1].getMessage()  # 85%
+    subject.release(held)
     reserve(subject, "1.500000")  # crosses 80% a second time
     assert len(caplog.records) == 3
     assert all("sk-" not in r.getMessage() for r in caplog.records)
@@ -268,7 +312,7 @@ def test_exhausted_budget_fails_the_job_without_a_provider_call(world: World) ->
     assert subject.month_totals(this_month()) == (Decimal(0), Decimal("0.009000"))
 
 
-def test_uncertain_failure_keeps_the_reservation_and_the_retry_reuses_it(world: World) -> None:
+def test_uncertain_failure_keeps_its_hold_and_the_retry_adds_to_it(world: World) -> None:
     source, _ = world.submit("one")
     subject = budget_for(world)
     provider = BudgetedFake("transient", "ok")
@@ -280,8 +324,11 @@ def test_uncertain_failure_keeps_the_reservation_and_the_retry_reuses_it(world: 
     make_due(world.engine, job.id)
     assert run_worker(world.jobs, handler) == 1
     assert world.job(source.id).state == JobState.SUCCEEDED
-    # One entry for the job: the hold was refreshed, then settled once.
-    assert subject.month_totals(this_month()) == (cost_usd(MODEL, 1000, 100), Decimal(0))
+    # The timed-out call stays counted as uncertain; the retry's hold was settled by its usage.
+    actual = cost_usd(MODEL, 1000, 100)
+    assert subject.month_totals(this_month()) == (actual, Decimal(0))
+    assert subject.uncertain_usd(this_month()) == Decimal("0.004000")
+    assert subject.committed_usd(this_month()) == Decimal("0.004000") + actual
     with transaction(world.factory) as session:
         assert len(session.scalars(select(ModelSpend)).all()) == 1
 

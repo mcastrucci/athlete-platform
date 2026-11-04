@@ -26,6 +26,7 @@ def upgrade() -> None:
         sa.Column("model", sa.String(), nullable=False),
         sa.Column("reserved_usd", sa.Numeric(14, 6), nullable=False),
         sa.Column("spent_usd", sa.Numeric(14, 6), nullable=False),
+        sa.Column("uncertain_usd", sa.Numeric(14, 6), server_default="0", nullable=False),
         sa.Column("input_tokens", sa.Integer(), nullable=False),
         sa.Column("output_tokens", sa.Integer(), nullable=False),
         sa.Column(
@@ -47,7 +48,8 @@ def upgrade() -> None:
             name=op.f("fk_model_spend_month_model_budget_months"),
         ),
         sa.CheckConstraint(
-            "reserved_usd >= 0 AND spent_usd >= 0", name=op.f("ck_model_spend_nonnegative_amounts")
+            "reserved_usd >= 0 AND spent_usd >= 0 AND uncertain_usd >= 0",
+            name=op.f("ck_model_spend_nonnegative_amounts"),
         ),
         sa.CheckConstraint(
             "input_tokens >= 0 AND output_tokens >= 0",
