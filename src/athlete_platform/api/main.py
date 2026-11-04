@@ -3,6 +3,7 @@
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import date
 from typing import Annotated
 from uuid import UUID
 
@@ -19,6 +20,14 @@ from athlete_platform.application.profiles import (
     Profiles,
     ProfileSnapshot,
     ProfileUpdate,
+)
+from athlete_platform.application.sessions import (
+    MAX_SESSION_PAGE,
+    ConfirmationInvalid,
+    ConfirmationRequest,
+    ConfirmationView,
+    SessionList,
+    Sessions,
 )
 from athlete_platform.application.sources import (
     DuplicateDecision,
@@ -39,6 +48,7 @@ from athlete_platform.infrastructure.identity import (
 )
 from athlete_platform.infrastructure.jobs import PostgresJobs
 from athlete_platform.infrastructure.profiles import PostgresProfiles
+from athlete_platform.infrastructure.sessions import PostgresSessions
 from athlete_platform.infrastructure.sources import PostgresSources
 
 
@@ -199,6 +209,56 @@ def create_app(
         repository: Annotated[Sources, Depends(sources)],
     ) -> InterpretationSnapshot:
         return repository.correct(athlete_id, source_id, correction)
+
+    def sessions(principal: Annotated[VerifiedIdentity, Depends(identity)]) -> Sessions:
+        if factory is None:
+            raise HTTPException(503, "Database is not configured")
+        return PostgresSessions(factory, principal)
+
+    @app.exception_handler(ConfirmationInvalid)
+    async def confirmation_invalid(request: Request, error: ConfirmationInvalid) -> JSONResponse:
+        return JSONResponse(
+            status_code=422,
+            content={"detail": "Interpretation cannot be confirmed", "paths": error.paths},
+        )
+
+    @app.post(
+        "/v1/athletes/{athlete_id}/sources/{source_id}/confirmation",
+        response_model=ConfirmationView,
+        status_code=201,
+    )
+    def confirm_interpretation(
+        athlete_id: UUID,
+        source_id: UUID,
+        request: ConfirmationRequest,
+        response: Response,
+        repository: Annotated[Sessions, Depends(sessions)],
+    ) -> ConfirmationView:
+        view, created = repository.confirm(athlete_id, source_id, request)
+        if not created:
+            response.status_code = 200
+        return view
+
+    @app.get(
+        "/v1/athletes/{athlete_id}/sources/{source_id}/confirmation",
+        response_model=ConfirmationView,
+    )
+    def read_confirmation(
+        athlete_id: UUID, source_id: UUID, repository: Annotated[Sessions, Depends(sessions)]
+    ) -> ConfirmationView:
+        return repository.confirmation(athlete_id, source_id)
+
+    @app.get("/v1/athletes/{athlete_id}/sessions", response_model=SessionList)
+    def list_sessions(
+        athlete_id: UUID,
+        repository: Annotated[Sessions, Depends(sessions)],
+        date_from: Annotated[date | None, Query(alias="from")] = None,
+        date_to: Annotated[date | None, Query(alias="to")] = None,
+        limit: Annotated[int, Query(ge=1, le=MAX_SESSION_PAGE)] = MAX_SESSION_PAGE,
+    ) -> SessionList:
+        if date_from is not None and date_to is not None and date_from > date_to:
+            raise HTTPException(422, "`from` must not be after `to`")
+        return repository.list_sessions(athlete_id, date_from, date_to, limit)
 
     @app.get("/health/live", response_model=HealthResponse, tags=["operations"])
     def health() -> HealthResponse:
