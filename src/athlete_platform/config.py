@@ -1,5 +1,6 @@
 """Validated environment configuration without implicit database connections."""
 
+from decimal import Decimal
 from typing import Literal
 
 from pydantic import Field, HttpUrl, SecretStr, field_validator, model_validator
@@ -23,6 +24,19 @@ class Settings(BaseSettings):
     oidc_jwks_url: HttpUrl | None = None
     oidc_key_format: Literal["jwks", "x509"] = "jwks"
     oidc_require_auth_time: bool = False
+    extraction_provider: Literal["anthropic"] | None = None
+    anthropic_api_key: SecretStr | None = Field(default=None, min_length=1, max_length=500)
+    extraction_model: str = Field(default="claude-haiku-5-5", min_length=1, max_length=100)
+    model_budget_usd_monthly: Decimal = Field(
+        default=Decimal(25), gt=0, le=Decimal(10_000), max_digits=7, decimal_places=2
+    )
+    extraction_daily_attempts_per_athlete: int = Field(default=20, ge=1, le=10_000)
+
+    @model_validator(mode="after")
+    def validate_extraction_provider(self) -> "Settings":
+        if self.extraction_provider == "anthropic" and self.anthropic_api_key is None:
+            raise ValueError("Configure ATHLETE_ANTHROPIC_API_KEY for the anthropic provider")
+        return self
 
     @model_validator(mode="after")
     def validate_oidc(self) -> "Settings":

@@ -6,6 +6,7 @@ from time import monotonic
 
 from pydantic import JsonValue
 
+from athlete_platform.application.budget import BudgetExhausted
 from athlete_platform.application.jobs import FailureCode, JobLease, WorkerQueue
 
 Handler = Callable[[JobLease, Callable[[], bool]], dict[str, JsonValue]]
@@ -42,7 +43,10 @@ def run_worker(
         except InvalidOutputError:
             # Model output may vary between calls, so allow one more try after the first.
             queue.fail(lease, FailureCode.INVALID_OUTPUT, retryable=lease.job.attempts <= 1)
+        except BudgetExhausted:
+            queue.fail(lease, FailureCode.BUDGET_EXHAUSTED, retryable=False)
         except Exception:
+            # Includes ExtractionConfigurationError: only an operator can fix it.
             queue.fail(lease, FailureCode.HANDLER_ERROR, retryable=False)
         else:
             try:

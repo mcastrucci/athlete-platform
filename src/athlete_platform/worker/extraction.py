@@ -1,14 +1,19 @@
 """Job handler that turns one text source into its first interpretation revision."""
 
 from collections.abc import Callable
+from typing import cast, overload
 from uuid import UUID
 
 from pydantic import JsonValue, ValidationError
 from sqlalchemy.orm import Session, sessionmaker
 
+from athlete_platform.application.budget import BudgetGate, Reservation
 from athlete_platform.application.extraction import (
+    BudgetedExtractor,
+    ExtractionConfigurationError,
     ExtractionOutput,
     ExtractionRequest,
+    ExtractionUsage,
     Extractor,
     InvalidExtractionOutput,
     TransientExtractionError,
@@ -27,7 +32,28 @@ class ExtractionRejected(Exception):
     """The job can never succeed; the runner stores it as a terminal handler error."""
 
 
-def extraction_handler(factory: sessionmaker[Session], extractor: Extractor) -> Handler:
+@overload
+def extraction_handler(
+    factory: sessionmaker[Session], extractor: Extractor, budget: None = None
+) -> Handler: ...
+
+
+@overload
+def extraction_handler(
+    factory: sessionmaker[Session], extractor: BudgetedExtractor, budget: BudgetGate
+) -> Handler: ...
+
+
+def extraction_handler(
+    factory: sessionmaker[Session], extractor: Extractor, budget: BudgetGate | None = None
+) -> Handler:
+    """Build the job handler.
+
+    With a budget gate the handler reserves the extractor's worst-case cost before the provider
+    call and settles it afterwards. Without one (tests, fakes) no spend is tracked. Reserved
+    budget is kept after any outcome in which the provider may have billed the call; it is
+    released only when the call certainly did not reach it.
+    """
     results = PostgresExtractionResults(factory)
 
     def handle(lease: JobLease, renew: Callable[[], bool]) -> dict[str, JsonValue]:
@@ -49,22 +75,52 @@ def extraction_handler(factory: sessionmaker[Session], extractor: Extractor) -> 
             or target.interpretation_version is not None
         ):
             raise ExtractionRejected("Source is not eligible for extraction")
+        request = ExtractionRequest(source_id=source_id, text=target.text, timezone=target.timezone)
+        reservation: Reservation | None = None
+        if budget is not None:
+            estimate = cast(BudgetedExtractor, extractor).estimate(request)
+            # Raises BudgetExhausted before any provider call.
+            reservation = budget.reserve(
+                lease.job.id, provider=estimate.provider, model=estimate.model, usd=estimate.usd
+            )
         if not renew():
+            release(reservation)
             raise TransientJobError("Lease lost before the provider call")
         try:
-            output = extractor.extract(
-                ExtractionRequest(source_id=source_id, text=target.text, timezone=target.timezone)
-            )
-            provenance, content = validated(lease, output)
+            output = extractor.extract(request)
         except TransientExtractionError as error:
+            if not error.outcome_unknown:
+                release(reservation)
             raise TransientJobError from error
-        except (InvalidExtractionOutput, ValidationError) as error:
+        except InvalidExtractionOutput as error:
+            if error.usage is not None:
+                reconcile(reservation, error.usage)
+            raise InvalidOutputError from error
+        except ValidationError as error:
+            raise InvalidOutputError from error
+        except ExtractionConfigurationError:
+            # The provider rejected the request, so nothing was billed.
+            release(reservation)
+            raise
+        # Any other exception leaves the reservation in place: the call may have been billed.
+        reconcile(reservation, output.usage)
+        try:
+            provenance, content = validated(lease, output)
+        except ValidationError as error:
             raise InvalidOutputError from error
         # The provider call may have outlived the lease; a stale worker must not write.
         if not renew():
             raise TransientJobError("Lease lost during the provider call")
         snapshot = results.record(source_id, provenance, content)
         return {"interpretation_version": snapshot.version}
+
+    def release(reservation: Reservation | None) -> None:
+        if budget is not None and reservation is not None:
+            budget.release(reservation)
+
+    def reconcile(reservation: Reservation | None, usage: ExtractionUsage) -> None:
+        if budget is not None and reservation is not None:
+            budget.reconcile(reservation, usage)
 
     return handle
 

@@ -22,6 +22,7 @@ class FailureCode(StrEnum):
     UNCONFIGURED = "provider_unconfigured"
     HANDLER_ERROR = "handler_error"
     ATTEMPT_LIMIT = "attempt_limit"
+    BUDGET_EXHAUSTED = "budget_exhausted"
 
 
 class QueueLimits(BaseModel):
