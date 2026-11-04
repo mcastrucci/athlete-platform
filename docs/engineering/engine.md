@@ -84,6 +84,19 @@ Synthetic tests live in `tests/unit/engine/`. Baseline test files are in `tests/
 
 Each test docstring names its source. `tests/unit/test_engine_corpus_guard.py` scans the engine package and its tests for personal-workspace references.
 
+## Rule changes in the personal repository after the baseline
+
+Cross-checked on 2026-11-04 against the personal repository's main branch (merge `39863c5`). The pin stays at `3f5897c` for parity. These later rule changes are generic, not personal thresholds, and must be carried when the related domain is extracted:
+
+| Personal repository change | Status here |
+| --- | --- |
+| `rep_count` treats a logged set with unknown reps as an unknown dose instead of failing (PR #16 there) | Applied: intentional difference 1 |
+| Decision 0022: the weekly "mixed pieces" target counts metcon-format pieces (intervals, AMRAP, for time), including single-movement benchmarks such as Grace; no work is added to satisfy the label | Pending: apply when weekly targets are extracted |
+| Decision 0022: a missed block test can be rescheduled to a later week of the same block, and the block's expected-test list must be updated with it | Pending: apply when block tests are modeled |
+| Decision 0023: the body model has a hip-flexor group (primary in burpees, toes-to-bar, sit-ups, GHD; secondary in running, cycling, box jumps, step-ups, lunges, split squats, pistols), burpees also load the lower back, and a figure region whose group the athlete's map lacks renders neutral | Pending: apply when the body model is extracted |
+
+The personal repository's coach-plan, catalog, and inventory changes since the baseline are athlete data and are not carried.
+
 ## Not yet done
 
 Consumer migration of the personal repository to a pinned release, a versioned engine artifact, and the compatibility adapter for the old read contract remain open, as required by section 7 of the pilot plan.

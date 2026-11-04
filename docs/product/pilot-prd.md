@@ -105,15 +105,16 @@ Avoid an arbitrary overall good/bad score. Findings must be specific, prioritize
 
 Propose a modified version that can be compared with the original plan. Each change includes dose, placement, goal, and its effect on time and total training load. Respect commitments declared immutable; if no compatible proposal exists, explain the conflict and request a decision.
 
-A brief explanation must be available for each prescribed or assessed exercise, with additional detail:
+A brief explanation must be available for each prescribed or assessed exercise, and for each decision to keep, reduce, substitute, or exclude one, with additional detail:
 
+- Goal: which capability it develops or maintains, and with what priority.
 - Contribution to the goal: development, maintenance, transfer, or technical practice.
 - Dose and timing: intensity, frequency, progression, and placement.
 - Cost and compatibility with the rest of the training.
-- Constraints, missing information, and alternatives.
+- Constraints, missing information, and alternatives, including why this option is preferred in the current context.
 - Which result would justify progressing, maintaining, reducing, or replacing it.
 
-Explanations must match the data, rules, and calculations actually applied. Distinguish available evidence, coaching judgment, and hypotheses; do not fabricate references or precision.
+Explanations must match the data, rules, and calculations actually applied. Each identifies the data, rules, and assumptions it relies on and its level of confidence. Distinguish available evidence, coaching judgment, and hypotheses; do not fabricate references or precision. A convincing narrative alone does not validate a prescription.
 
 The athlete accepts, modifies, or rejects the proposal. Preserve the original, alternatives, and accepted version. No adjustment silently changes the active plan.
 
