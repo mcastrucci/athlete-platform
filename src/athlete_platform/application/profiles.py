@@ -5,7 +5,7 @@ from typing import Annotated, Literal, Protocol
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, field_validator
+from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, StringConstraints, field_validator
 
 from athlete_platform.domain.identity import VerifiedIdentity
 
@@ -55,6 +55,23 @@ class Constraint(Contract):
     kind: Literal["hard", "preference"]
 
 
+BudgetId = Annotated[str, StringConstraints(min_length=1, max_length=64)]
+PullCategoryName = Annotated[str, StringConstraints(min_length=1, max_length=64)]
+Cap = Annotated[FiniteFloat, Field(ge=0)]
+
+
+class PullBudget(Contract):
+    """Weekly caps on pull repetitions per category, evaluated against confirmed sessions.
+
+    The free-text `constraints` are never parsed into budgets; only this structured form is
+    evaluated. A cap of 0 forbids the category for the week.
+    """
+
+    id: BudgetId
+    weekly_caps: dict[PullCategoryName, Cap] = Field(min_length=1, max_length=20)
+    active: bool = True
+
+
 class ProfileContent(Contract):
     timezone: str
     experience: Text | None = None
@@ -65,6 +82,16 @@ class ProfileContent(Contract):
     baselines: list[Baseline] | None = Field(default=None, max_length=100)
     skills: list[SkillReport] | None = Field(default=None, max_length=100)
     constraints: list[Constraint] | None = Field(default=None, max_length=100)
+    pull_budgets: list[PullBudget] | None = Field(default=None, max_length=50)
+
+    @field_validator("pull_budgets")
+    @classmethod
+    def unique_budget_ids(cls, value: list[PullBudget] | None) -> list[PullBudget] | None:
+        if value is not None:
+            ids = [budget.id for budget in value]
+            if len(set(ids)) != len(ids):
+                raise ValueError("Pull budget ids must be unique")
+        return value
 
     @field_validator("timezone")
     @classmethod

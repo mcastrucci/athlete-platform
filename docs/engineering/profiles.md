@@ -37,7 +37,7 @@ Creation accepts ProfileContent directly. Example:
 
 Updates wrap the full content as {"expected_version": 1, "content": {...}}. This is replacement, not PATCH: omitting an optional field sets it to unknown in the new revision; an explicit empty list means none reported. Earlier revisions are preserved. Weekdays are 0 (Monday) through 6 (Sunday).
 
-Optional context includes experience, prioritized goals, availability, equipment, fixed/flexible commitments, dated baseline metrics with units and source, reported skills, and hard constraints/preferences. Unknown values are null; no personal defaults are copied. A programming_reference is descriptive text at this stage, not a foreign key or authorization grant. Real plan relationships must use scoped identifiers when plans exist.
+Optional context includes experience, prioritized goals, availability, equipment, fixed/flexible commitments, dated baseline metrics with units and source, reported skills, and hard constraints/preferences, and structured `pull_budgets` (weekly caps per pull category) that the [evaluation](evaluation.md) reads; free-text constraints are never parsed. Unknown values are null; no personal defaults are copied. A programming_reference is descriptive text at this stage, not a foreign key or authorization grant. Real plan relationships must use scoped identifiers when plans exist.
 
 Each response contains athlete_id, version, created_at, and content. UTC-aware recording times are separate from local dates on baseline observations and the athlete's IANA timezone. Revision payloads use schema-versioned JSONB; ownership, identity, versions, and timestamps are relational columns. Future training calculations consume validated typed context, not arbitrary unvalidated JSON.
 

@@ -34,6 +34,8 @@ All inputs are frozen dataclasses in `athlete_platform.domain.engine.model`.
 - `PullConstraint(id, weekly_caps, active=True)`. Caps must be finite and non-negative, else `ValueError`.
 - `PullCheckResult(constraint_id, category, kind, cap, value, window_start, window_end, status, unknown_dates, detail)` with `kind` in `weekly | rolling` and `status` in `ok | fail | manual`.
 
+`select_sessions` (the per-date selection above) is public so callers can see which sessions an evaluation counted, and `ENGINE_VERSION` names the rules. `catalog.py` holds the generic catalog described in [evaluation.md](evaluation.md#catalog).
+
 Quantities are typed `float | None` but validated at run time with `valid_count`, because callers may pass values parsed from untrusted documents.
 
 ## Semantics
@@ -99,4 +101,8 @@ The personal repository's coach-plan, catalog, and inventory changes since the b
 
 ## Not yet done
 
-Consumer migration of the personal repository to a pinned release, a versioned engine artifact, and the compatibility adapter for the old read contract remain open, as required by section 7 of the pilot plan.
+The engine is connected to confirmed sessions and the profile in [evaluation.md](evaluation.md): a generic versioned catalog, a canonical-session adapter, and stored, manifest-linked evaluations with staleness. Still open:
+
+- Consumer migration of the personal repository to a pinned release, a versioned engine artifact, and the compatibility adapter for the old read contract, as required by section 7 of the pilot plan.
+- The other constraint handlers, volume and placement, and persisted manual-review overrides (intentional difference 7).
+- Decisions 0022 and 0023 (see the table above), which stay pending.

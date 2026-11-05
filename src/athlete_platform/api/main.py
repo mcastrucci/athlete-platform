@@ -12,6 +12,15 @@ from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
+from athlete_platform.application.evaluation import (
+    MAX_EVALUATION_PAGE,
+    EvaluationList,
+    EvaluationNotFound,
+    EvaluationRequest,
+    Evaluations,
+    EvaluationView,
+    WeekLabel,
+)
 from athlete_platform.application.profiles import (
     IdentityVerifier,
     ProfileConflict,
@@ -42,6 +51,7 @@ from athlete_platform.application.sources import (
 from athlete_platform.config import Settings
 from athlete_platform.domain.identity import IdentityUnavailable, InvalidIdentity, VerifiedIdentity
 from athlete_platform.infrastructure.database import build_engine, build_session_factory
+from athlete_platform.infrastructure.evaluations import PostgresEvaluations
 from athlete_platform.infrastructure.identity import (
     JWTIdentityVerifier,
     UnconfiguredIdentityVerifier,
@@ -259,6 +269,46 @@ def create_app(
         if date_from is not None and date_to is not None and date_from > date_to:
             raise HTTPException(422, "`from` must not be after `to`")
         return repository.list_sessions(athlete_id, date_from, date_to, limit)
+
+    def evaluations(principal: Annotated[VerifiedIdentity, Depends(identity)]) -> Evaluations:
+        if factory is None:
+            raise HTTPException(503, "Database is not configured")
+        return PostgresEvaluations(factory, principal)
+
+    @app.exception_handler(EvaluationNotFound)
+    async def evaluation_not_found(request: Request, error: EvaluationNotFound) -> JSONResponse:
+        return JSONResponse(status_code=404, content={"detail": "Evaluation not found"})
+
+    @app.post(
+        "/v1/athletes/{athlete_id}/evaluations", response_model=EvaluationView, status_code=201
+    )
+    def evaluate_week(
+        athlete_id: UUID,
+        request: EvaluationRequest,
+        response: Response,
+        repository: Annotated[Evaluations, Depends(evaluations)],
+    ) -> EvaluationView:
+        view, created = repository.evaluate(athlete_id, request)
+        if not created:
+            response.status_code = 200
+        return view
+
+    @app.get("/v1/athletes/{athlete_id}/evaluations", response_model=EvaluationList)
+    def list_evaluations(
+        athlete_id: UUID,
+        week: Annotated[WeekLabel, Query()],
+        repository: Annotated[Evaluations, Depends(evaluations)],
+        limit: Annotated[int, Query(ge=1, le=MAX_EVALUATION_PAGE)] = MAX_EVALUATION_PAGE,
+    ) -> EvaluationList:
+        return repository.list_week(athlete_id, week, limit)
+
+    @app.get("/v1/athletes/{athlete_id}/evaluations/{evaluation_id}", response_model=EvaluationView)
+    def read_evaluation(
+        athlete_id: UUID,
+        evaluation_id: UUID,
+        repository: Annotated[Evaluations, Depends(evaluations)],
+    ) -> EvaluationView:
+        return repository.read(athlete_id, evaluation_id)
 
     @app.get("/health/live", response_model=HealthResponse, tags=["operations"])
     def health() -> HealthResponse:
