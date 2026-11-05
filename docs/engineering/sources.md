@@ -96,3 +96,5 @@ All paths are under `/v1/athletes/{athlete_id}` and require the caller to own th
 ## Next slices in #6
 
 1. Plans and execution logs that reference canonical sessions, and a way to withdraw or supersede a confirmation. Today a confirmation is final.
+
+Evaluation of confirmed sessions against pull budgets is implemented separately in [evaluation.md](evaluation.md) (issue #7, slice 2). It reads confirmed sessions only and records the confirmed `(source, interpretation version)` pairs in each evaluation's manifest, so a later withdrawal or supersession will make evaluations stale without extra work.

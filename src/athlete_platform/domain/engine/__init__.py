@@ -1,5 +1,13 @@
 """Pull-repetition budget engine, extracted from athlete@3f5897c; see docs/engineering/engine.md."""
 
+from .catalog import (
+    CATALOG,
+    CATALOG_VERSION,
+    PULL_CATEGORIES,
+    normalize_exercise_id,
+    pull_categories,
+    representative_exercise,
+)
 from .model import (
     Block,
     Catalog,
@@ -13,6 +21,7 @@ from .model import (
     valid_count,
 )
 from .pulls import (
+    ENGINE_VERSION,
     METCON_ID,
     WINDOW_DAYS,
     PullTotals,
@@ -25,13 +34,18 @@ from .pulls import (
     quantity_errors,
     rep_count,
     rolling_pulls,
+    select_sessions,
     session_pulls,
     set_count,
     weekly_pulls,
 )
 
 __all__ = [
+    "CATALOG",
+    "CATALOG_VERSION",
+    "ENGINE_VERSION",
     "METCON_ID",
+    "PULL_CATEGORIES",
     "WINDOW_DAYS",
     "Block",
     "Catalog",
@@ -48,10 +62,14 @@ __all__ = [
     "evaluate_pull_constraints",
     "iso_week",
     "iso_week_bounds",
+    "normalize_exercise_id",
+    "pull_categories",
     "pull_constraints",
     "quantity_errors",
     "rep_count",
+    "representative_exercise",
     "rolling_pulls",
+    "select_sessions",
     "session_pulls",
     "set_count",
     "valid_count",

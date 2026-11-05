@@ -28,6 +28,10 @@ METCON_ID = "metcon"
 
 WINDOW_DAYS = 7
 
+#: Identifies the engine rules. The evaluation manifest records it; bump it when the engine or the
+#: canonical-session adapter changes what an evaluation computes.
+ENGINE_VERSION = "pull-budget-v1"
+
 
 # ---------------------------------------------------------------- dose helpers
 
@@ -242,7 +246,7 @@ def _daily(
     return daily, unknown
 
 
-def _select_sessions(
+def select_sessions(
     sessions: Iterable[Session],
     *,
     first: datetime.date,
@@ -281,7 +285,7 @@ def weekly_pulls(
     planned sessions; a date with only plan uses the plan.
     """
     _check_week(week_start, week_end)
-    inside = _select_sessions(sessions, first=week_start, week_start=week_start, week_end=week_end)
+    inside = select_sessions(sessions, first=week_start, week_start=week_start, week_end=week_end)
     daily, unknown = _daily(inside, catalog)
     totals: dict[str, float] = {}
     for per_category in daily.values():
@@ -323,7 +327,7 @@ def rolling_pulls(
     """
     _check_week(week_start, week_end)
     first = week_start - datetime.timedelta(days=WINDOW_DAYS - 1)
-    selected = _select_sessions(sessions, first=first, week_start=week_start, week_end=week_end)
+    selected = select_sessions(sessions, first=first, week_start=week_start, week_end=week_end)
     daily, unknown = _daily(selected, catalog)
     regulated = {cat for c in pull_constraints(constraints) for cat in c.weekly_caps}
     result: dict[str, RollingPull] = {}
